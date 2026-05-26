@@ -1,23 +1,15 @@
-const adminPasskey = process.env.ADMIN_PASSKEY || 'freefire-2026';
+import {
+  applyMatchScore,
+  buildFinalists,
+  createTeamRecord,
+  refreshQualification,
+  sortTeams,
+  validateScoreEntries,
+  validateTeamPayload,
+  normalizeGroup
+} from '../client/src/lib/rules.js';
 
-const scoreTable = {
-  1: 12,
-  2: 9,
-  3: 8,
-  4: 7,
-  5: 6,
-  6: 5,
-  7: 4,
-  8: 3,
-  9: 2,
-  10: 1
-};
-
-const makeMatchHistory = () => ({
-  1: { placement: null, kills: 0, points: 0 },
-  2: { placement: null, kills: 0, points: 0 },
-  3: { placement: null, kills: 0, points: 0 }
-});
+const adminPasskey = process.env.ADMIN_PASSKEY || 'FF-ADMIN-2025';
 
 const teams = [];
 
@@ -33,46 +25,16 @@ const cors = {
   'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
 };
 
-const sortTeams = (collection) =>
-  [...collection].sort((left, right) => {
-    if (right.totalPoints !== left.totalPoints) return right.totalPoints - left.totalPoints;
-    if (right.totalBooyahs !== left.totalBooyahs) return right.totalBooyahs - left.totalBooyahs;
-    return right.totalKills - left.totalKills;
-  });
-
 const cloneTeam = (team) => ({ ...team, playerUids: [...team.playerUids], matchHistory: structuredClone(team.matchHistory) });
 
 const getGroupTeams = (group) => teams.filter((team) => team.bracketGroup === group);
-
-function updateScore(team, placement, kills, matchNumber) {
-  const placementPoints = scoreTable[placement] || 0;
-  const points = placementPoints + kills;
-  team.matchesPlayed += 1;
-  team.totalKills += kills;
-  team.totalPoints += points;
-  if (placement === 1) team.totalBooyahs += 1;
-  team.matchHistory[matchNumber] = { placement, kills, points };
-}
 
 function advanceFinals(passkey) {
   if (passkey !== adminPasskey) {
     return null;
   }
 
-  const finalists = [...getGroupTeams('A').slice(0, 6), ...getGroupTeams('B').slice(0, 6)].map((team) => ({
-    ...cloneTeam(team),
-    bracketGroup: 'finals',
-    matchesPlayed: 0,
-    totalBooyahs: 0,
-    totalKills: 0,
-    totalPoints: 0,
-    isQualified: false,
-    matchHistory: {
-      1: { placement: null, kills: 0, points: 0 },
-      2: { placement: null, kills: 0, points: 0 },
-      3: { placement: null, kills: 0, points: 0 }
-    }
-  }));
+  const finalists = buildFinalists(teams.map(cloneTeam));
 
   teams.length = 0;
   teams.push(...finalists);
@@ -109,28 +71,19 @@ function handleRequest(req, res) {
     req.on('data', (chunk) => (body += chunk));
     req.on('end', () => {
       const payload = JSON.parse(body || '{}');
-      const playerUids = Array.isArray(payload.playerUids) ? payload.playerUids.map(String).filter(Boolean) : [];
+      let validated;
 
-      if (!payload.teamName || !payload.leaderName || playerUids.length !== 4 || new Set(playerUids).size !== 4) {
+      try {
+        validated = validateTeamPayload(payload);
+      } catch (error) {
         res.statusCode = 400;
-        return res.end(JSON.stringify({ message: 'Invalid team payload' }));
+        return res.end(JSON.stringify({ message: error.message || 'Invalid team payload' }));
       }
 
-        const team = {
-        id: payload.id || `team-${Date.now()}`,
-        teamName: String(payload.teamName),
-        leaderName: String(payload.leaderName),
-        playerUids,
-        bracketGroup: payload.bracketGroup === 'B' ? 'B' : 'A',
-        matchesPlayed: 0,
-        totalBooyahs: 0,
-        totalKills: 0,
-        totalPoints: 0,
-        isQualified: false,
-          matchHistory: makeMatchHistory()
-      };
+      const team = createTeamRecord(validated);
 
       teams.push(team);
+      refreshQualification(teams);
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify({ team }));
     });
@@ -147,18 +100,25 @@ function handleRequest(req, res) {
         return res.end(JSON.stringify({ message: 'Invalid admin passkey' }));
       }
 
-      const selectedGroup = String(payload.group || 'A').toLowerCase() === 'b' ? 'B' : String(payload.group || 'A').toLowerCase() === 'finals' ? 'finals' : 'A';
+      const selectedGroup = normalizeGroup(payload.group);
       const matchNumber = Number(payload.matchNumber || 1);
       const groupTeams = selectedGroup === 'finals' ? teams.filter((team) => team.bracketGroup === 'finals') : getGroupTeams(selectedGroup);
-      const scores = Array.isArray(payload.scores) ? payload.scores : [];
+      let scores;
+
+      try {
+        scores = validateScoreEntries(payload.scores);
+      } catch (error) {
+        res.statusCode = 400;
+        return res.end(JSON.stringify({ message: error.message || 'Invalid scorecard payload' }));
+      }
 
       scores.forEach((entry) => {
         const team = groupTeams.find((candidate) => candidate.id === entry.teamId || candidate.teamName === entry.teamName);
         if (!team) return;
-        const placement = Number(entry.placement);
-        const kills = Number(entry.kills || 0);
-        updateScore(team, placement, kills, matchNumber);
+        applyMatchScore(team, Number(entry.placement), Number(entry.kills || 0), matchNumber);
       });
+
+      refreshQualification(teams);
 
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify({ teams: sortTeams(groupTeams) }));

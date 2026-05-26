@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
+import { MATCH_TEAM_COUNT } from './lib/rules.js';
 import { api } from './services/api';
 
 const headSheet = `
@@ -343,7 +344,7 @@ const emptyScorecard = {
   group: 'A',
   matchNumber: '1',
   passkey: '',
-  rows: Array.from({ length: 6 }, (_, index) => ({ teamId: '', placement: '', kills: '', label: `Team ${index + 1}` }))
+  rows: Array.from({ length: MATCH_TEAM_COUNT }, (_, index) => ({ teamId: '', placement: '', kills: '', label: `Team ${index + 1}` }))
 };
 
 function injectThemeSheet() {
@@ -354,14 +355,6 @@ function injectThemeSheet() {
   style.id = 'ff-booyah-theme';
   style.textContent = headSheet;
   document.head.appendChild(style);
-}
-
-function sortTeams(list) {
-  return [...list].sort((left, right) => {
-    if (right.totalPoints !== left.totalPoints) return right.totalPoints - left.totalPoints;
-    if (right.totalBooyahs !== left.totalBooyahs) return right.totalBooyahs - left.totalBooyahs;
-    return right.totalKills - left.totalKills;
-  });
 }
 
 function Stat({ label, value }) {
@@ -423,8 +416,8 @@ function Leaderboard({ title, rows }) {
                   <td>{team.totalKills}</td>
                   <td style={{ color: '#fdba74', fontWeight: 900 }}>{team.totalPoints}</td>
                   <td>
-                    <span className={`ff-badge ${index < 6 ? 'ff-qualified' : ''}`}>
-                      {index < 6 ? 'Qualified' : 'Chasing'}
+                    <span className={`ff-badge ${team.isQualified ? 'ff-qualified' : ''}`}>
+                      {team.isQualified ? 'Qualified' : 'Chasing'}
                     </span>
                   </td>
                 </motion.tr>
