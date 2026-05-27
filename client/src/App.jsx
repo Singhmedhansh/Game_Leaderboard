@@ -6,6 +6,7 @@ import {
   QUALIFIER_COUNT,
   applyMatchScore,
   buildFinalists,
+  clearMatchScore,
   createTournamentState,
   isQualificationUnlocked,
   refreshQualification,
@@ -108,14 +109,17 @@ const buildShareLink = (state) => {
   return url.toString();
 };
 
-const createDraftRows = (teams) =>
+const createDraftRows = (teams, matchNumber) =>
   teams.map((team) => ({
     teamId: team.id,
     teamName: team.teamName,
     leaderName: team.leaderName,
     leaderInGameName: team.leaderInGameName,
-    placement: '',
-    kills: ''
+    placement: team.matchHistory?.[Number(matchNumber)]?.placement ? String(team.matchHistory[Number(matchNumber)].placement) : '',
+    kills:
+      team.matchHistory?.[Number(matchNumber)]?.placement != null
+        ? String(Number(team.matchHistory[Number(matchNumber)].kills || 0))
+        : ''
   }));
 
 const getGroupTeams = (teams, group) => teams.filter((team) => team.bracketGroup === group);
@@ -254,7 +258,9 @@ function FinalsPreview({ teams, qualificationUnlocked }) {
   );
 }
 
-function MatchEditor({ draft, setDraft, onSubmit, onCopyLink, statusMessage }) {
+function MatchEditor({ draft, setDraft, onSubmit, onDeleteMatch, onCopyLink, statusMessage }) {
+  const [showAdminKey, setShowAdminKey] = useState(false);
+
   const updateRow = (index, field, value) => {
     setDraft((current) => {
       const rows = [...current.rows];
@@ -304,23 +310,33 @@ function MatchEditor({ draft, setDraft, onSubmit, onCopyLink, statusMessage }) {
 
         <label className="ff-field-group">
           <span>Admin Key</span>
-          <input
-            className="ff-field"
-            type="password"
-            value={draft.passkey}
-            onChange={(event) => setDraft((current) => ({ ...current, passkey: event.target.value }))}
-            placeholder="Enter admin key"
-          />
+          <div className="ff-key-wrap">
+            <input
+              className="ff-field"
+              type={showAdminKey ? 'text' : 'password'}
+              value={draft.passkey}
+              onChange={(event) => setDraft((current) => ({ ...current, passkey: event.target.value }))}
+              placeholder="Enter admin key"
+            />
+            <button type="button" className="ff-action ff-action-secondary ff-peek-btn" onClick={() => setShowAdminKey((value) => !value)}>
+              {showAdminKey ? 'Hide' : 'Peek'}
+            </button>
+          </div>
         </label>
 
         <div className="ff-action-row">
           <button type="button" className="ff-action" onClick={onSubmit}>
             Save Match
           </button>
+          <button type="button" className="ff-action ff-action-danger" onClick={onDeleteMatch}>
+            Delete Match
+          </button>
           <button type="button" className="ff-action ff-action-secondary" onClick={onCopyLink}>
             Copy Share Link
           </button>
         </div>
+
+        <div className="ff-editor-status">{statusMessage}</div>
       </div>
 
       <div className="ff-scorecard-shell">
@@ -374,7 +390,6 @@ function MatchEditor({ draft, setDraft, onSubmit, onCopyLink, statusMessage }) {
       <div className="ff-scorefoot">
         <Pill tone="warning">1 kill = 1 point</Pill>
         <Pill tone="neutral">Placement scale: 12, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0</Pill>
-        <div className="ff-status">{statusMessage}</div>
       </div>
     </section>
   );
@@ -386,7 +401,7 @@ export default function App() {
     group: 'A',
     matchNumber: '1',
     passkey: '',
-    rows: createDraftRows(getGroupTeams(loadInitialState().teams, 'A'))
+    rows: createDraftRows(getGroupTeams(loadInitialState().teams, 'A'), 1)
   }));
   const [statusMessage, setStatusMessage] = useState('Ready to update the leaderboard.');
 
@@ -403,9 +418,9 @@ export default function App() {
     const selectedTeams = getGroupTeams(tournament.teams, draft.group);
     setDraft((current) => ({
       ...current,
-      rows: createDraftRows(selectedTeams)
+      rows: createDraftRows(selectedTeams, current.matchNumber)
     }));
-  }, [draft.group, tournament.teams]);
+  }, [draft.group, draft.matchNumber, tournament.teams]);
 
   const totalPoints = tournament.teams.reduce((sum, team) => sum + team.totalPoints, 0);
   const liveLeader = sortTeams(tournament.teams)[0];
@@ -417,6 +432,21 @@ export default function App() {
       }
 
       const groupTeams = getGroupTeams(tournament.teams, draft.group);
+      const maxPlacement = groupTeams.length <= 12 ? groupTeams.length : 12;
+
+      draft.rows.forEach((row) => {
+        const placement = Number(row.placement);
+        const kills = Number(row.kills || 0);
+
+        if (!row.placement || !Number.isInteger(placement) || placement < 1 || placement > maxPlacement) {
+          throw new Error(`${row.teamName}: placement must be between 1 and ${maxPlacement}`);
+        }
+
+        if (!Number.isFinite(kills) || kills < 0) {
+          throw new Error(`${row.teamName}: kills must be 0 or more`);
+        }
+      });
+
       const scoreEntries = validateScoreEntries(
         draft.rows.map((row) => ({
           teamId: row.teamId,
@@ -432,8 +462,8 @@ export default function App() {
 
       const placements = new Set();
       scoreEntries.forEach((entry) => {
-        if (!Number.isInteger(entry.placement) || entry.placement < 1 || entry.placement > 12) {
-          throw new Error('Placements must be whole numbers between 1 and 12');
+        if (!Number.isInteger(entry.placement) || entry.placement < 1 || entry.placement > maxPlacement) {
+          throw new Error(`Placements must be whole numbers between 1 and ${maxPlacement}`);
         }
 
         if (placements.has(entry.placement)) {
@@ -453,23 +483,51 @@ export default function App() {
 
       refreshQualification(nextTournament.teams);
       setTournament(nextTournament);
-      setStatusMessage(`Saved Group ${draft.group} Match ${draft.matchNumber}.`);
+      setStatusMessage(`Saved Group ${draft.group} Match ${draft.matchNumber}. You can edit and save again anytime.`);
       setDraft((current) => ({
         ...current,
-        rows: createDraftRows(getGroupTeams(nextTournament.teams, draft.group))
+        rows: createDraftRows(getGroupTeams(nextTournament.teams, draft.group), current.matchNumber)
       }));
     } catch (error) {
       setStatusMessage(error.message || 'Unable to save match results.');
     }
   };
 
-  const copyShareLink = async () => {
+  const deleteMatch = () => {
     try {
-      const link = buildShareLink(tournament);
+      if (draft.passkey !== ADMIN_PASSKEY) {
+        throw new Error('Invalid admin key');
+      }
+
+      const nextTournament = clone(tournament);
+      const groupTeams = getGroupTeams(nextTournament.teams, draft.group);
+      groupTeams.forEach((team) => clearMatchScore(team, draft.matchNumber));
+
+      refreshQualification(nextTournament.teams);
+      setTournament(nextTournament);
+      setStatusMessage(`Deleted Group ${draft.group} Match ${draft.matchNumber}.`);
+      setDraft((current) => ({
+        ...current,
+        rows: createDraftRows(getGroupTeams(nextTournament.teams, draft.group), current.matchNumber)
+      }));
+    } catch (error) {
+      setStatusMessage(error.message || 'Unable to delete match results.');
+    }
+  };
+
+  const copyShareLink = async () => {
+    const link = buildShareLink(tournament);
+
+    try {
+      if (!window.isSecureContext || !navigator.clipboard?.writeText) {
+        throw new Error('Clipboard API unavailable');
+      }
+
       await navigator.clipboard.writeText(link);
       setStatusMessage('Share link copied to clipboard.');
     } catch {
-      setStatusMessage('Copy failed. Your browser may block clipboard access.');
+      window.prompt('Copy this share link', link);
+      setStatusMessage('Share link generated. Copy it from the popup.');
     }
   };
 
@@ -498,7 +556,14 @@ export default function App() {
         <FinalsPreview teams={finalsPreview} qualificationUnlocked={qualificationUnlocked} />
       </section>
 
-      <MatchEditor draft={draft} setDraft={setDraft} onSubmit={submitMatch} onCopyLink={copyShareLink} statusMessage={statusMessage} />
+      <MatchEditor
+        draft={draft}
+        setDraft={setDraft}
+        onSubmit={submitMatch}
+        onDeleteMatch={deleteMatch}
+        onCopyLink={copyShareLink}
+        statusMessage={statusMessage}
+      />
     </main>
   );
 }

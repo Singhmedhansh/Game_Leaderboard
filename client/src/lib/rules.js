@@ -133,15 +133,63 @@ export const validateScoreEntries = (scores) => {
 };
 
 export const applyMatchScore = (team, placement, kills, matchNumber) => {
+  const matchId = Number(matchNumber) || 1;
+  const previous = team.matchHistory?.[matchId] || { placement: null, kills: 0, points: 0 };
+
+  const previousPlacement = Number(previous.placement);
+  const previousKills = Number(previous.kills || 0);
+  const previousPoints = Number(previous.points || 0);
+
+  if (Number.isInteger(previousPlacement) && previousPlacement >= 1 && previousPlacement <= MATCH_TEAM_COUNT) {
+    team.totalPoints -= previousPoints;
+    team.totalKills -= previousKills;
+    if (previousPlacement === 1) {
+      team.totalBooyahs -= 1;
+    }
+  }
+
   const placementPoints = scoreTable[placement] || 0;
   const roundPoints = placementPoints + kills;
-  const matchId = Number(matchNumber) || 1;
 
   team.totalPoints += roundPoints;
   team.totalKills += kills;
   team.totalBooyahs += placement === 1 ? 1 : 0;
-  team.matchesPlayed = Math.max(team.matchesPlayed, matchId);
   team.matchHistory[matchId] = { placement, kills, points: roundPoints };
+
+  const playedMatches = Array.from({ length: MATCH_COUNT }, (_, index) => index + 1).filter((round) => {
+    const roundPlacement = Number(team.matchHistory?.[round]?.placement);
+    return Number.isInteger(roundPlacement) && roundPlacement >= 1 && roundPlacement <= MATCH_TEAM_COUNT;
+  });
+
+  team.matchesPlayed = playedMatches.length ? Math.max(...playedMatches) : 0;
+  team.totalPoints = Math.max(0, team.totalPoints);
+  team.totalKills = Math.max(0, team.totalKills);
+  team.totalBooyahs = Math.max(0, team.totalBooyahs);
+};
+
+export const clearMatchScore = (team, matchNumber) => {
+  const matchId = Number(matchNumber) || 1;
+  const previous = team.matchHistory?.[matchId] || { placement: null, kills: 0, points: 0 };
+  const previousPlacement = Number(previous.placement);
+  const previousKills = Number(previous.kills || 0);
+  const previousPoints = Number(previous.points || 0);
+
+  if (Number.isInteger(previousPlacement) && previousPlacement >= 1 && previousPlacement <= MATCH_TEAM_COUNT) {
+    team.totalPoints = Math.max(0, team.totalPoints - previousPoints);
+    team.totalKills = Math.max(0, team.totalKills - previousKills);
+    if (previousPlacement === 1) {
+      team.totalBooyahs = Math.max(0, team.totalBooyahs - 1);
+    }
+  }
+
+  team.matchHistory[matchId] = { placement: null, kills: 0, points: 0 };
+
+  const playedMatches = Array.from({ length: MATCH_COUNT }, (_, index) => index + 1).filter((round) => {
+    const roundPlacement = Number(team.matchHistory?.[round]?.placement);
+    return Number.isInteger(roundPlacement) && roundPlacement >= 1 && roundPlacement <= MATCH_TEAM_COUNT;
+  });
+
+  team.matchesPlayed = playedMatches.length ? Math.max(...playedMatches) : 0;
 };
 
 const hasCompletedAllMatches = (team) =>

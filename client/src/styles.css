@@ -431,6 +431,18 @@ input, select {
   box-shadow: 0 0 0 3px rgba(255, 122, 24, 0.16);
 }
 
+.ff-key-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.ff-peek-btn {
+  min-height: 50px;
+  padding: 0 14px;
+}
+
 .ff-field-small {
   max-width: 110px;
 }
@@ -453,8 +465,25 @@ input, select {
   background: rgba(255, 255, 255, 0.05);
 }
 
+.ff-action-danger {
+  border-color: rgba(239, 68, 68, 0.56);
+  background: linear-gradient(180deg, #ef4444, #b91c1c);
+}
+
 .ff-scorecard-shell {
   padding: 0 16px 16px;
+}
+
+.ff-editor-status {
+  grid-column: 1 / -1;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #d8dee9;
+  padding: 12px 14px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
 }
 
 .ff-scorecard-head {
@@ -515,17 +544,6 @@ input, select {
   justify-content: space-between;
 }
 
-.ff-status {
-  flex: 1;
-  min-width: 240px;
-  text-align: right;
-  color: #d8dee9;
-  padding: 12px 14px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  background: rgba(255, 255, 255, 0.04);
-}
-
 @media (max-width: 1180px) {
   .ff-hero,
   .ff-grid-two,
@@ -565,12 +583,6 @@ input, select {
   .ff-scorecard-head,
   .ff-score-row {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .ff-status {
-    text-align: left;
-    min-width: 0;
-    width: 100%;
   }
 
   .ff-scorefoot {
