@@ -545,7 +545,11 @@ export default function App() {
           <StatCard label="Registered teams" value="21" note="11 in Group A, 10 in Group B" />
           <StatCard label="Round format" value="3 Matches" note="1 point per kill" />
           <StatCard label="Qualification" value={qualificationUnlocked ? 'Unlocked' : 'Pending'} note="Top 6 from each group after full entry" />
-          <StatCard label="Live leader" value={liveLeader?.teamName || 'Loading'} note={`${totalPoints} total points across the board`} />
+          <StatCard
+            label="Live leader"
+            value={liveLeader ? `${liveLeader.teamName} (${liveLeader.totalPoints} pts)` : 'Loading'}
+            note={`${totalPoints} total points across the board`}
+          />
         </div>
       </motion.section>
 
