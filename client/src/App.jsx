@@ -566,7 +566,8 @@ export default function App() {
       <motion.section className="ff-hero" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
         <div className="ff-hero-copy">
           <Pill tone="accent">Free Fire Tournament Leaderboard</Pill>
-          <h1>College Championship Control Room</h1>
+          <h1>Command the Matches — Update live scores, manage lobbies, crown the champion</h1>
+          <p>Enter full lobby results, edit on the fly, and watch teams climb the leaderboard. Use the Admin Console to save, update, or remove match entries during the event.</p>
         </div>
 
         <div className="ff-hero-stats">
