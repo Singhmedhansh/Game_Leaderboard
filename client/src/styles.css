@@ -517,6 +517,19 @@ input, select {
   background: rgba(5, 8, 13, 0.55);
 }
 
+.ff-score-row.ff-score-empty {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+  border-style: dashed;
+  opacity: 0.64;
+  pointer-events: none;
+}
+
+.ff-score-row.ff-score-empty .ff-field {
+  background: transparent;
+  border: none;
+  color: var(--ff-muted);
+}
+
 .ff-score-team {
   display: flex;
   align-items: center;

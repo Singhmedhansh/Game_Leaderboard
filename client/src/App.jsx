@@ -385,6 +385,33 @@ function MatchEditor({ draft, setDraft, onSubmit, onDeleteMatch, onCopyLink, sta
                 />
               </motion.div>
             ))}
+              {Array.from({ length: Math.max(0, MATCH_TEAM_COUNT - draft.rows.length) }).map((_, i) => (
+                <motion.div
+                  key={`empty-${i}`}
+                  className="ff-score-row ff-score-empty"
+                  variants={motionRows}
+                  custom={draft.rows.length + i}
+                  initial="hidden"
+                  animate="show"
+                  exit={{ opacity: 0, y: -8 }}
+                >
+                  <div className="ff-score-team">
+                    <span className="ff-score-index">{draft.rows.length + i + 1}</span>
+                    <div>
+                      <strong>—</strong>
+                      <span className="ff-muted">Empty slot</span>
+                    </div>
+                  </div>
+
+                  <div className="ff-field ff-field-small" aria-hidden>
+                    —
+                  </div>
+
+                  <div className="ff-field ff-field-small" aria-hidden>
+                    —
+                  </div>
+                </motion.div>
+              ))}
           </AnimatePresence>
         </div>
       </div>
