@@ -108,6 +108,23 @@ input, select {
 .ff-effect-blood { bottom: 12px; right: 38px; opacity: 0.85; }
 .ff-effect-blood-sm { bottom: 86px; left: 58px; opacity: 0.92; }
 
+.ff-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ff-particle {
+  position: absolute;
+  left: calc(50% + 40px);
+  top: calc(50% - 10px);
+  width: 8px;
+  height: 8px;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #ffd6b3, #ff6d00);
+  box-shadow: 0 6px 18px rgba(255, 100, 0, 0.12);
+}
+
 .ff-hero-copy h1,
 .ff-panel-head h2,
 .ff-final-card h3,
