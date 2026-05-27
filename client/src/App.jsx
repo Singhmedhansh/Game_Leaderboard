@@ -15,6 +15,7 @@ import {
   validateScoreEntries
 } from './lib/rules.js';
 import './styles.css';
+import AnimatedEffects from './components/AnimatedEffects.jsx';
 
 const STORAGE_KEY = 'ff-leaderboard-state-v3';
 
@@ -580,6 +581,7 @@ export default function App() {
             note={`${totalPoints} total points across the board`}
           />
         </div>
+        <AnimatedEffects />
       </motion.section>
 
       <section className="ff-grid ff-grid-two">

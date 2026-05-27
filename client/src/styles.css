@@ -86,6 +86,28 @@ input, select {
   margin-bottom: 18px;
 }
 
+.ff-hero {
+  position: relative;
+}
+
+.ff-hero-effects {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ff-hero-effects .ff-effect {
+  position: absolute;
+  will-change: transform, opacity;
+  mix-blend-mode: screen;
+}
+
+.ff-effect-gun { top: 16px; right: 18px; opacity: 0.95; transform: translateZ(0); }
+.ff-effect-grenade { top: 72px; left: 28px; opacity: 0.95; }
+.ff-effect-blood { bottom: 12px; right: 38px; opacity: 0.85; }
+.ff-effect-blood-sm { bottom: 86px; left: 58px; opacity: 0.92; }
+
 .ff-hero-copy h1,
 .ff-panel-head h2,
 .ff-final-card h3,
