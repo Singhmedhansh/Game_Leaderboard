@@ -1,7 +1,9 @@
 import {
+  ADMIN_PASSKEY,
   applyMatchScore,
   buildFinalists,
   createTeamRecord,
+  createTournamentState,
   refreshQualification,
   sortTeams,
   validateScoreEntries,
@@ -9,9 +11,9 @@ import {
   normalizeGroup
 } from '../client/src/lib/rules.js';
 
-const adminPasskey = process.env.ADMIN_PASSKEY || 'FF-ADMIN-2025';
+const adminPasskey = process.env.ADMIN_PASSKEY || ADMIN_PASSKEY;
 
-const teams = [];
+const teams = createTournamentState().teams;
 
 const json = (statusCode, data) => ({
   statusCode,
@@ -61,7 +63,9 @@ function handleRequest(req, res) {
   if (req.method === 'GET' && url.pathname === '/api/roster') {
     const query = (url.searchParams.get('q') || '').toLowerCase();
     const roster = teams.filter((team) =>
-      [team.teamName, team.leaderName, ...team.playerUids].some((field) => field.toLowerCase().includes(query))
+      [team.teamName, team.leaderName, team.leaderInGameName, team.leaderUid, ...(team.memberNames || []), ...team.playerUids].some((field) =>
+        String(field || '').toLowerCase().includes(query)
+      )
     );
     return res.end(JSON.stringify({ teams: roster }));
   }

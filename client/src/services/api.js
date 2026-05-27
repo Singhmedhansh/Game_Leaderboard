@@ -1,7 +1,9 @@
 import {
+  ADMIN_PASSKEY,
   applyMatchScore,
   buildFinalists,
   createTeamRecord,
+  createTournamentState,
   makeMatchHistory,
   normalizeGroup,
   refreshQualification,
@@ -12,9 +14,9 @@ import {
 } from '../lib/rules.js';
 
 const storageKey = 'freefire-leaderboard-state-v2';
-const adminPasskey = 'FF-ADMIN-2025';
+const adminPasskey = ADMIN_PASSKEY;
 const useLocalFallback = import.meta.env.DEV;
-const emptyState = { teams: [] };
+const emptyState = createTournamentState();
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
@@ -108,7 +110,11 @@ export const api = {
         const q = String(query || '').toLowerCase();
         const state = localState();
         return Promise.resolve({
-          teams: state.teams.filter((team) => [team.teamName, team.leaderName, ...team.playerUids].some((field) => field.toLowerCase().includes(q)))
+          teams: state.teams.filter((team) =>
+            [team.teamName, team.leaderName, team.leaderInGameName, team.leaderUid, ...(team.memberNames || []), ...team.playerUids].some((field) =>
+              String(field || '').toLowerCase().includes(q)
+            )
+          )
         });
       }
     ),

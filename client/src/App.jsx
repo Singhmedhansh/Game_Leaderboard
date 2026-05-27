@@ -1,392 +1,168 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
-import { MATCH_TEAM_COUNT } from './lib/rules.js';
-import { api } from './services/api';
+import {
+  ADMIN_PASSKEY,
+  MATCH_COUNT,
+  QUALIFIER_COUNT,
+  applyMatchScore,
+  buildFinalists,
+  createTournamentState,
+  isQualificationUnlocked,
+  refreshQualification,
+  sortTeams,
+  validateScoreEntries
+} from './lib/rules.js';
+import './styles.css';
 
-const headSheet = `
-:root {
-  --ff-bg: #0a0a0a;
-  --ff-panel: #111111;
-  --ff-panel-2: #161616;
-  --ff-line: rgba(255,255,255,.10);
-  --ff-text: #f5f5f5;
-  --ff-muted: #a3a3a3;
-  --ff-accent: #ea580c;
-  --ff-accent-2: #fb923c;
-  --ff-success: #f59e0b;
-  --ff-radius: 18px;
-  --ff-shadow: 0 18px 48px rgba(0,0,0,.45);
-  --ff-grid: linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
-}
+const STORAGE_KEY = 'ff-leaderboard-state-v3';
 
-* { box-sizing: border-box; }
-html { color-scheme: dark; background: var(--ff-bg); }
-body {
-  margin: 0;
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at top, rgba(234,88,12,.18), transparent 24%),
-    radial-gradient(circle at right, rgba(251,146,60,.08), transparent 22%),
-    var(--ff-bg);
-  color: var(--ff-text);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  overflow-x: hidden;
-}
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background-image: var(--ff-grid);
-  background-size: 44px 44px;
-  opacity: .12;
-  mask-image: linear-gradient(to bottom, black, transparent 92%);
-}
-a, button, input, select { font: inherit; }
-button { cursor: pointer; }
-
-.ff-shell {
-  position: relative;
-  z-index: 1;
-  width: min(1400px, calc(100% - 32px));
-  margin: 0 auto;
-  padding: 28px 0 40px;
-}
-
-.ff-hero, .ff-panel {
-  border: 1px solid var(--ff-line);
-  background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
-  box-shadow: var(--ff-shadow);
-  backdrop-filter: blur(18px);
-}
-
-.ff-hero {
-  border-radius: 24px;
-  padding: 24px;
-  display: grid;
-  gap: 20px;
-}
-
-.ff-kicker {
-  margin: 0 0 8px;
-  color: var(--ff-accent-2);
-  font-size: 11px;
-  letter-spacing: .35em;
-  text-transform: uppercase;
-  font-weight: 900;
-}
-
-.ff-title {
-  margin: 0;
-  text-transform: uppercase;
-  font-weight: 900;
-  letter-spacing: .06em;
-  font-size: clamp(2rem, 4vw, 4.6rem);
-  line-height: .94;
-}
-
-.ff-subtitle {
-  margin: 10px 0 0;
-  max-width: 920px;
-  color: var(--ff-muted);
-  line-height: 1.7;
-  font-size: 14px;
-}
-
-.ff-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.ff-stat {
-  border: 1px solid var(--ff-line);
-  border-radius: 16px;
-  background: rgba(0,0,0,.28);
-  padding: 14px 16px;
-}
-
-.ff-stat-label {
-  margin: 0;
-  color: #8b8b8b;
-  text-transform: uppercase;
-  font-size: 10px;
-  letter-spacing: .28em;
-}
-
-.ff-stat-value {
-  margin: 8px 0 0;
-  font-size: 22px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.ff-tabs {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin: 18px 0;
-}
-
-.ff-tab {
-  border: 1px solid rgba(255,255,255,.12);
-  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
-  color: #d4d4d4;
-  text-transform: uppercase;
-  letter-spacing: .18em;
-  font-size: 12px;
-  font-weight: 800;
-  padding: 16px 18px;
-  clip-path: polygon(0 0, 94% 0, 100% 18px, 100% 100%, 6% 100%, 0 calc(100% - 18px));
-  transition: transform .18s ease, border-color .18s ease, color .18s ease, background .18s ease;
-}
-
-.ff-tab:hover { transform: translateY(-1px); border-color: rgba(234,88,12,.45); color: #fff; }
-.ff-tab-active {
-  color: #fff;
-  border-color: rgba(234,88,12,.65);
-  background: linear-gradient(180deg, rgba(234,88,12,.24), rgba(234,88,12,.08));
-  box-shadow: inset 0 0 0 1px rgba(234,88,12,.22), 0 0 0 1px rgba(234,88,12,.15);
-}
-
-.ff-panel {
-  border-radius: 22px;
-  overflow: hidden;
-}
-
-.ff-panel-head {
-  padding: 18px 18px 14px;
-  border-bottom: 1px solid var(--ff-line);
-  display: flex;
-  justify-content: space-between;
-  align-items: end;
-  gap: 16px;
-}
-
-.ff-panel-head h2 {
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: .18em;
-  font-size: 14px;
-}
-
-.ff-panel-head p {
-  margin: 6px 0 0;
-  color: var(--ff-muted);
-  font-size: 13px;
-}
-
-.ff-table-wrap { overflow: auto; }
-
-.ff-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 1280px;
-}
-
-.ff-table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background: rgba(13,13,13,.96);
-  color: #f3f3f3;
-  text-transform: uppercase;
-  letter-spacing: .18em;
-  font-size: 10px;
-  padding: 15px 14px;
-  border-bottom: 1px solid var(--ff-line);
-  text-align: left;
-  white-space: nowrap;
-}
-
-.ff-table tbody td {
-  padding: 14px;
-  border-bottom: 1px solid rgba(255,255,255,.06);
-  font-size: 13px;
-  color: #e5e5e5;
-  vertical-align: middle;
-}
-
-.ff-table tbody tr { background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)); }
-.ff-table tbody tr:nth-child(even) { background: rgba(255,255,255,.015); }
-.ff-table tbody tr:hover { background: rgba(234,88,12,.08); }
-
-.ff-rank {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border: 1px solid rgba(234,88,12,.45);
-  background: rgba(234,88,12,.14);
-  clip-path: polygon(14% 0, 86% 0, 100% 14%, 100% 86%, 86% 100%, 14% 100%, 0 86%, 0 14%);
-  font-weight: 900;
-  color: #ffedd5;
-}
-
-.ff-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  border: 1px solid rgba(234,88,12,.38);
-  background: rgba(234,88,12,.1);
-  color: #fdba74;
-  text-transform: uppercase;
-  letter-spacing: .22em;
-  font-size: 10px;
-  font-weight: 900;
-}
-
-.ff-qualified { animation: pulseGlow 1.6s ease-in-out infinite; }
-
-@keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(234,88,12,.18); }
-  50% { box-shadow: 0 0 0 10px rgba(234,88,12,0); }
-}
-
-.ff-divider {
-  height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(234,88,12,.88), transparent);
-  box-shadow: 0 0 20px rgba(234,88,12,.55);
-  margin: 0 14px 14px;
-}
-
-.ff-table-muted { color: var(--ff-muted); }
-
-.ff-grid { display: grid; gap: 18px; }
-
-.ff-roster {
-  display: grid;
-  gap: 14px;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-}
-
-.ff-card {
-  border: 1px solid var(--ff-line);
-  background: rgba(255,255,255,.03);
-  border-radius: 18px;
-  padding: 16px;
-  clip-path: polygon(0 0, 93% 0, 100% 12%, 100% 100%, 7% 100%, 0 calc(100% - 12px));
-}
-
-.ff-card h3 {
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: .14em;
-  font-size: 14px;
-}
-
-.ff-card p {
-  margin: 8px 0 0;
-  color: var(--ff-muted);
-  font-size: 13px;
-}
-
-.ff-admin-grid {
-  display: grid;
-  gap: 18px;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-}
-
-.ff-form { display: grid; gap: 12px; }
-
-.ff-field {
-  width: 100%;
-  border: 1px solid rgba(255,255,255,.10);
-  background: rgba(0,0,0,.36);
-  color: #fff;
-  padding: 14px 16px;
-  border-radius: 14px;
-  outline: none;
-  letter-spacing: .04em;
-}
-
-.ff-field::placeholder { color: #737373; }
-.ff-field:focus { border-color: rgba(234,88,12,.65); box-shadow: 0 0 0 3px rgba(234,88,12,.16); }
-
-.ff-action {
-  border: 1px solid rgba(234,88,12,.55);
-  background: linear-gradient(180deg, #fb7b32, #ea580c);
-  color: #fff;
-  text-transform: uppercase;
-  letter-spacing: .2em;
-  font-weight: 900;
-  padding: 14px 16px;
-  clip-path: polygon(0 0, 94% 0, 100% 18px, 100% 100%, 6% 100%, 0 calc(100% - 18px));
-}
-
-.ff-action-secondary {
-  border-color: rgba(255,255,255,.14);
-  background: rgba(255,255,255,.05);
-}
-
-@media (max-width: 960px) {
-  .ff-tabs, .ff-stats, .ff-admin-grid { grid-template-columns: 1fr; }
-  .ff-panel-head { align-items: start; flex-direction: column; }
-}
-`;
-
-const tabs = [
-  { id: 'A', label: 'Group A' },
-  { id: 'B', label: 'Group B' },
-  { id: 'finals', label: 'Grand Finals' }
-];
-
-const emptyTeamForm = {
-  teamName: '',
-  leaderName: '',
-  group: 'A',
-  playerUids: ['', '', '', '']
+const motionRows = {
+  hidden: { opacity: 0, y: 12 },
+  show: (index) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: index * 0.035, duration: 0.24, ease: 'easeOut' }
+  })
 };
 
-const emptyScorecard = {
-  group: 'A',
-  matchNumber: '1',
-  passkey: '',
-  rows: Array.from({ length: MATCH_TEAM_COUNT }, (_, index) => ({ teamId: '', placement: '', kills: '', label: `Team ${index + 1}` }))
+const clone = (value) => JSON.parse(JSON.stringify(value));
+
+const buildSnapshot = (state) => ({
+  teams: state.teams.map((team) => ({
+    id: team.id,
+    matchesPlayed: team.matchesPlayed,
+    totalBooyahs: team.totalBooyahs,
+    totalKills: team.totalKills,
+    totalPoints: team.totalPoints,
+    isQualified: team.isQualified,
+    matchHistory: team.matchHistory
+  }))
+});
+
+const hydrateState = (snapshot) => {
+  const fresh = createTournamentState();
+
+  if (!snapshot?.teams?.length) {
+    return fresh;
+  }
+
+  const statsById = new Map(snapshot.teams.map((entry) => [entry.id, entry]));
+
+  fresh.teams = fresh.teams.map((team) => {
+    const saved = statsById.get(team.id);
+    if (!saved) {
+      return team;
+    }
+
+    return {
+      ...team,
+      matchesPlayed: Number(saved.matchesPlayed || 0),
+      totalBooyahs: Number(saved.totalBooyahs || 0),
+      totalKills: Number(saved.totalKills || 0),
+      totalPoints: Number(saved.totalPoints || 0),
+      isQualified: Boolean(saved.isQualified),
+      matchHistory: clone(saved.matchHistory || team.matchHistory)
+    };
+  });
+
+  refreshQualification(fresh.teams);
+  return fresh;
 };
 
-function injectThemeSheet() {
-  const existing = document.getElementById('ff-booyah-theme');
-  if (existing) return;
+const loadInitialState = () => {
+  if (typeof window === 'undefined') {
+    return createTournamentState();
+  }
 
-  const style = document.createElement('style');
-  style.id = 'ff-booyah-theme';
-  style.textContent = headSheet;
-  document.head.appendChild(style);
+  const hash = window.location.hash.startsWith('#ff=') ? window.location.hash.slice(4) : '';
+
+  if (hash) {
+    try {
+      return hydrateState(JSON.parse(decodeURIComponent(hash)));
+    } catch {
+      window.location.hash = '';
+    }
+  }
+
+  const stored = window.localStorage.getItem(STORAGE_KEY);
+  if (!stored) {
+    return createTournamentState();
+  }
+
+  try {
+    return hydrateState(JSON.parse(stored));
+  } catch {
+    return createTournamentState();
+  }
+};
+
+const persistState = (state) => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(buildSnapshot(state)));
+};
+
+const buildShareLink = (state) => {
+  const payload = encodeURIComponent(JSON.stringify(buildSnapshot(state)));
+  const url = new URL(window.location.href);
+  url.hash = `ff=${payload}`;
+  return url.toString();
+};
+
+const createDraftRows = (teams) =>
+  teams.map((team) => ({
+    teamId: team.id,
+    teamName: team.teamName,
+    leaderName: team.leaderName,
+    leaderInGameName: team.leaderInGameName,
+    placement: '',
+    kills: ''
+  }));
+
+const getGroupTeams = (teams, group) => teams.filter((team) => team.bracketGroup === group);
+
+function Pill({ children, tone = 'neutral' }) {
+  return <span className={`ff-pill ff-pill-${tone}`}>{children}</span>;
 }
 
-function Stat({ label, value }) {
+function StatCard({ label, value, note }) {
   return (
-    <div className="ff-stat">
+    <div className="ff-stat-card">
       <p className="ff-stat-label">{label}</p>
       <p className="ff-stat-value">{value}</p>
+      {note ? <p className="ff-stat-note">{note}</p> : null}
     </div>
   );
 }
 
-function Leaderboard({ title, rows }) {
+function TeamTable({ title, group, teams, qualificationUnlocked }) {
+  const qualifiedCount = teams.filter((team) => team.isQualified).length;
+
   return (
-    <section className="ff-panel">
+    <section className="ff-panel ff-board">
       <div className="ff-panel-head">
         <div>
+          <p className="ff-kicker">{group} Bracket</p>
           <h2>{title}</h2>
-          <p>Dense roster table with ranking, qualification, and registration data columns.</p>
+          <p>
+            {teams.length} teams, top {QUALIFIER_COUNT} advance to finals.
+          </p>
         </div>
-        <div className="ff-badge">Booyah Matrix</div>
+        <div className="ff-head-metrics">
+          <Pill tone="accent">{qualificationUnlocked ? `${qualifiedCount} Qualified` : 'Qualification Locked'}</Pill>
+          <Pill tone="dark">{teams.length} Registered</Pill>
+        </div>
       </div>
-      <div className="ff-divider" />
+
       <div className="ff-table-wrap">
         <table className="ff-table">
           <thead>
             <tr>
               <th>Rank</th>
-              <th>Team ID</th>
-              <th>Team Name</th>
-              <th>Leader Name</th>
-              <th>Player UIDs</th>
-              <th>Group</th>
+              <th>Team</th>
+              <th>Leader</th>
+              <th>In-Game</th>
+              <th>UID</th>
+              <th>Members</th>
               <th>Played</th>
               <th>Booyahs</th>
               <th>Kills</th>
@@ -396,317 +172,333 @@ function Leaderboard({ title, rows }) {
           </thead>
           <tbody>
             <AnimatePresence mode="popLayout">
-              {rows.length ? rows.map((team, index) => (
+              {teams.map((team, index) => (
                 <motion.tr
                   key={team.id}
                   layout
-                  initial={{ opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -14 }}
-                  transition={{ type: 'spring', stiffness: 460, damping: 34 }}
+                  variants={motionRows}
+                  custom={index}
+                  initial="hidden"
+                  animate="show"
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ type: 'spring', stiffness: 480, damping: 34 }}
                 >
-                  <td><span className="ff-rank">{index + 1}</span></td>
-                  <td className="ff-table-muted">{team.id}</td>
-                  <td style={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: '.08em' }}>{team.teamName}</td>
+                  <td>
+                    <span className={`ff-rank ${qualificationUnlocked && index < QUALIFIER_COUNT ? 'ff-rank-qualifier' : ''}`}>{index + 1}</span>
+                  </td>
+                  <td>
+                    <div className="ff-team-name">{team.teamName}</div>
+                  </td>
                   <td>{team.leaderName}</td>
-                  <td className="ff-table-muted">{team.playerUids.join(' • ')}</td>
-                  <td>{team.bracketGroup}</td>
+                  <td>{team.leaderInGameName || 'n/a'}</td>
+                  <td className="ff-muted">{team.leaderUid || 'n/a'}</td>
+                  <td className="ff-members">{team.memberNames?.length ? team.memberNames.join(', ') : 'n/a'}</td>
                   <td>{team.matchesPlayed}</td>
                   <td>{team.totalBooyahs}</td>
                   <td>{team.totalKills}</td>
-                  <td style={{ color: '#fdba74', fontWeight: 900 }}>{team.totalPoints}</td>
+                  <td className="ff-points">{team.totalPoints}</td>
                   <td>
-                    <span className={`ff-badge ${team.isQualified ? 'ff-qualified' : ''}`}>
-                      {team.isQualified ? 'Qualified' : 'Chasing'}
-                    </span>
+                    <Pill tone={!qualificationUnlocked ? 'dark' : team.isQualified ? 'accent' : 'neutral'}>
+                      {!qualificationUnlocked ? 'Pending' : team.isQualified ? 'Qualified' : 'Chasing'}
+                    </Pill>
                   </td>
                 </motion.tr>
-              )) : (
-                <tr>
-                  <td colSpan="11" className="ff-table-muted" style={{ padding: 24, textAlign: 'center' }}>
-                    No teams registered yet. Add your first team from the admin panel.
-                  </td>
-                </tr>
-              )}
+              ))}
             </AnimatePresence>
           </tbody>
         </table>
       </div>
-      <div className="ff-divider" />
-      <div style={{ padding: '0 14px 16px' }}>
-        <div className="ff-badge">Line under position 6 marks qualification</div>
-      </div>
     </section>
   );
 }
 
-function RosterGrid({ rows }) {
+function FinalsPreview({ teams, qualificationUnlocked }) {
   return (
     <section className="ff-panel">
       <div className="ff-panel-head">
         <div>
-          <h2>Roster Search</h2>
-          <p>Verified player ID cards and team leader profiles for quick lookup.</p>
+          <p className="ff-kicker">Finals Preview</p>
+          <h2>Top 12 Bracket</h2>
+          <p>{qualificationUnlocked ? 'Top 6 from each group are selected for the final lobby preview.' : 'Finals lineup appears after all 3 matches are entered for every team.'}</p>
         </div>
+        <Pill tone="warning">{qualificationUnlocked ? 'Auto-built from live standings' : 'Waiting for complete scoring'}</Pill>
       </div>
-      <div style={{ padding: 16 }}>
-        <div className="ff-roster">
-          {rows.length ? rows.map((team) => (
-            <motion.article key={team.id} className="ff-card" layout initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
+
+      <div className="ff-finals-grid">
+        {qualificationUnlocked ? (
+          teams.map((team, index) => (
+            <motion.article
+              key={team.id}
+              className="ff-final-card"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.03, duration: 0.22 }}
+            >
+              <div className="ff-final-head">
+                <span className="ff-final-slot">{index + 1}</span>
+                <Pill tone={team.bracketGroup === 'A' ? 'accent' : 'cyan'}>{team.bracketGroup}</Pill>
+              </div>
               <h3>{team.teamName}</h3>
-              <p>Leader: {team.leaderName}</p>
-              <p>Group {team.bracketGroup} • {team.playerUids.join(', ')}</p>
+              <p>{team.leaderName}</p>
+              <p className="ff-muted">{team.totalPoints} pts • {team.totalKills} kills</p>
             </motion.article>
-          )) : (
-            <div className="ff-card">
-              <h3>No teams yet</h3>
-              <p>Register a team and it will appear here immediately.</p>
-            </div>
-          )}
-        </div>
+          ))
+        ) : (
+          <div className="ff-final-card">
+            <h3>Qualification Not Ready</h3>
+            <p>Complete all 3 matches for all teams in Group A and Group B to unlock finalists.</p>
+          </div>
+        )}
       </div>
     </section>
   );
 }
 
-function AdminConsole({ onRegisterTeam, onSubmitScorecard, onAdvanceFinals, statusMessage, setStatusMessage }) {
-  const [teamForm, setTeamForm] = useState(emptyTeamForm);
-  const [scorecard, setScorecard] = useState(emptyScorecard);
-  const [busy, setBusy] = useState(false);
-
-  const updateTeamField = (field, value) => setTeamForm((current) => ({ ...current, [field]: value }));
-  const updateUid = (index, value) =>
-    setTeamForm((current) => {
-      const playerUids = [...current.playerUids];
-      playerUids[index] = value;
-      return { ...current, playerUids };
-    });
-
-  const updateScoreRow = (index, field, value) =>
-    setScorecard((current) => {
+function MatchEditor({ draft, setDraft, onSubmit, onCopyLink, statusMessage }) {
+  const updateRow = (index, field, value) => {
+    setDraft((current) => {
       const rows = [...current.rows];
       rows[index] = { ...rows[index], [field]: value };
       return { ...current, rows };
     });
-
-  const teamPreview = useMemo(() => ({
-    teamName: teamForm.teamName || 'Team Name Preview',
-    leaderName: teamForm.leaderName || 'Leader Name',
-    group: teamForm.group,
-    playerUids: teamForm.playerUids.filter(Boolean)
-  }), [teamForm]);
-
-  const scorecardPreview = useMemo(() => scorecard.rows.filter((row) => row.teamId || row.placement || row.kills), [scorecard.rows]);
-
-  const handleRegister = async () => {
-    setBusy(true);
-    try {
-      await onRegisterTeam({
-        teamName: teamForm.teamName,
-        leaderName: teamForm.leaderName,
-        bracketGroup: teamForm.group,
-        playerUids: teamForm.playerUids
-      });
-      setTeamForm(emptyTeamForm);
-    } catch (error) {
-      setStatusMessage(error.message || 'Registration failed');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleSubmitScorecard = async () => {
-    setBusy(true);
-    try {
-      await onSubmitScorecard({
-        group: scorecard.group,
-        matchNumber: Number(scorecard.matchNumber),
-        passkey: scorecard.passkey,
-        scores: scorecard.rows
-          .filter((row) => row.teamId || row.placement || row.kills)
-          .map((row) => ({
-            teamId: row.teamId,
-            placement: Number(row.placement),
-            kills: Number(row.kills || 0)
-          }))
-      });
-    } catch (error) {
-      setStatusMessage(error.message || 'Scorecard submit failed');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleAdvanceFinals = async () => {
-    setBusy(true);
-    try {
-      await onAdvanceFinals(scorecard.passkey);
-    } catch (error) {
-      setStatusMessage(error.message || 'Finals advance failed');
-    } finally {
-      setBusy(false);
-    }
   };
 
   return (
-    <section className="ff-panel">
+    <section className="ff-panel ff-editor">
       <div className="ff-panel-head">
         <div>
-          <h2>Admin Panel</h2>
-          <p>Team registration, scorecard entry, and finals control in a compact operator layout.</p>
+          <p className="ff-kicker">Admin Console</p>
+          <h2>Match Score Entry</h2>
+          <p>Enter one full lobby result at a time.</p>
         </div>
-        <div className="ff-badge">Secure Passkey Module</div>
+        <Pill tone="accent">Protected</Pill>
       </div>
-      <div style={{ padding: 16 }}>
-        <div className="ff-admin-grid">
-          <form className="ff-form">
-            <input className="ff-field" value={teamForm.teamName} onChange={(event) => updateTeamField('teamName', event.target.value)} placeholder="Team Name" />
-            <input className="ff-field" value={teamForm.leaderName} onChange={(event) => updateTeamField('leaderName', event.target.value)} placeholder="Leader Name" />
-            {teamForm.playerUids.map((uid, index) => (
-              <input key={index} className="ff-field" value={uid} onChange={(event) => updateUid(index, event.target.value)} placeholder={`Player UID ${index + 1}`} />
-            ))}
-            <select className="ff-field" value={teamForm.group} onChange={(event) => updateTeamField('group', event.target.value)}>
-              <option value="A">Group A</option>
-              <option value="B">Group B</option>
-            </select>
-            <button type="button" className="ff-action" onClick={handleRegister} disabled={busy}>
-              Register Team
-            </button>
-            <div className="ff-card">
-              <h3>Team Preview</h3>
-              <p>{teamPreview.teamName}</p>
-              <p>{teamPreview.leaderName}</p>
-              <p>Group {teamPreview.group} • {teamPreview.playerUids.length ? teamPreview.playerUids.join(' • ') : 'No UIDs entered yet'}</p>
-            </div>
-          </form>
 
-          <form className="ff-form">
-            <select className="ff-field" value={scorecard.group} onChange={(event) => setScorecard((current) => ({ ...current, group: event.target.value }))}>
-              <option value="A">Group A</option>
-              <option value="B">Group B</option>
-              <option value="finals">Grand Finals</option>
-            </select>
-            <select className="ff-field" value={scorecard.matchNumber} onChange={(event) => setScorecard((current) => ({ ...current, matchNumber: event.target.value }))}>
-              <option value="1">Match 1</option>
-              <option value="2">Match 2</option>
-              <option value="3">Match 3</option>
-            </select>
-            <input className="ff-field" value={scorecard.passkey} onChange={(event) => setScorecard((current) => ({ ...current, passkey: event.target.value }))} placeholder="Admin Passkey" />
-            <div className="ff-card">
-              <h3>Match Scorecard Matrix</h3>
-              <p>Enter placement ranks and kills for each team, then submit with the passkey.</p>
-              <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
-                {scorecard.rows.map((row, index) => (
-                  <div key={index} style={{ display: 'grid', gridTemplateColumns: '1.2fr .7fr .7fr', gap: 8 }}>
-                    <input className="ff-field" value={row.teamId} onChange={(event) => updateScoreRow(index, 'teamId', event.target.value)} placeholder={row.label} />
-                    <input className="ff-field" value={row.placement} onChange={(event) => updateScoreRow(index, 'placement', event.target.value)} placeholder="Placement" />
-                    <input className="ff-field" value={row.kills} onChange={(event) => updateScoreRow(index, 'kills', event.target.value)} placeholder="Kills" />
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <button type="button" className="ff-action" onClick={handleSubmitScorecard} disabled={busy}>Submit Scorecard</button>
-              <button type="button" className="ff-action ff-action-secondary" onClick={handleAdvanceFinals} disabled={busy}>Trigger Finals Phase</button>
-            </div>
-            <div className="ff-badge" style={{ justifyContent: 'center' }}>{statusMessage}</div>
-            <div className="ff-card">
-              <h3>Scorecard Preview</h3>
-              <p>Group {scorecard.group} • Match {scorecard.matchNumber}</p>
-              <p>{scorecardPreview.length ? `${scorecardPreview.length} rows entered` : 'Fill in placements and kills to preview submitted data'}</p>
-            </div>
-          </form>
+      <div className="ff-editor-toolbar">
+        <label className="ff-field-group">
+          <span>Group</span>
+          <select
+            className="ff-field"
+            value={draft.group}
+            onChange={(event) => setDraft((current) => ({ ...current, group: event.target.value }))}
+          >
+            <option value="A">Group A</option>
+            <option value="B">Group B</option>
+          </select>
+        </label>
+
+        <label className="ff-field-group">
+          <span>Match</span>
+          <select
+            className="ff-field"
+            value={draft.matchNumber}
+            onChange={(event) => setDraft((current) => ({ ...current, matchNumber: event.target.value }))}
+          >
+            {Array.from({ length: MATCH_COUNT }, (_, index) => (
+              <option key={index + 1} value={String(index + 1)}>
+                Match {index + 1}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="ff-field-group">
+          <span>Admin Key</span>
+          <input
+            className="ff-field"
+            type="password"
+            value={draft.passkey}
+            onChange={(event) => setDraft((current) => ({ ...current, passkey: event.target.value }))}
+            placeholder="Enter admin key"
+          />
+        </label>
+
+        <div className="ff-action-row">
+          <button type="button" className="ff-action" onClick={onSubmit}>
+            Save Match
+          </button>
+          <button type="button" className="ff-action ff-action-secondary" onClick={onCopyLink}>
+            Copy Share Link
+          </button>
         </div>
+      </div>
+
+      <div className="ff-scorecard-shell">
+        <div className="ff-scorecard-head">
+          <span>Team</span>
+          <span>Placement</span>
+          <span>Kills</span>
+        </div>
+
+        <div className="ff-scorecard-list">
+          <AnimatePresence mode="popLayout">
+            {draft.rows.map((row, index) => (
+              <motion.div
+                key={row.teamId}
+                className="ff-score-row"
+                variants={motionRows}
+                custom={index}
+                initial="hidden"
+                animate="show"
+                exit={{ opacity: 0, y: -8 }}
+              >
+                <div className="ff-score-team">
+                  <span className="ff-score-index">{index + 1}</span>
+                  <div>
+                    <strong>{row.teamName}</strong>
+                    <span>{row.leaderName} • {row.leaderInGameName}</span>
+                  </div>
+                </div>
+
+                <input
+                  className="ff-field ff-field-small"
+                  value={row.placement}
+                  onChange={(event) => updateRow(index, 'placement', event.target.value)}
+                  placeholder="1"
+                  inputMode="numeric"
+                />
+
+                <input
+                  className="ff-field ff-field-small"
+                  value={row.kills}
+                  onChange={(event) => updateRow(index, 'kills', event.target.value)}
+                  placeholder="0"
+                  inputMode="numeric"
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      <div className="ff-scorefoot">
+        <Pill tone="warning">1 kill = 1 point</Pill>
+        <Pill tone="neutral">Placement scale: 12, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0</Pill>
+        <div className="ff-status">{statusMessage}</div>
       </div>
     </section>
   );
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('A');
-  const [statusMessage, setStatusMessage] = useState('Ready to load tournament data');
-  const [standings, setStandings] = useState({ A: [], B: [], finals: [] });
-  const [roster, setRoster] = useState([]);
+  const [tournament, setTournament] = useState(loadInitialState);
+  const [draft, setDraft] = useState(() => ({
+    group: 'A',
+    matchNumber: '1',
+    passkey: '',
+    rows: createDraftRows(getGroupTeams(loadInitialState().teams, 'A'))
+  }));
+  const [statusMessage, setStatusMessage] = useState('Ready to update the leaderboard.');
+
+  const groupA = useMemo(() => sortTeams(getGroupTeams(tournament.teams, 'A')), [tournament.teams]);
+  const groupB = useMemo(() => sortTeams(getGroupTeams(tournament.teams, 'B')), [tournament.teams]);
+  const qualificationUnlocked = useMemo(() => isQualificationUnlocked(tournament.teams), [tournament.teams]);
+  const finalsPreview = useMemo(() => (qualificationUnlocked ? buildFinalists(tournament.teams) : []), [qualificationUnlocked, tournament.teams]);
 
   useEffect(() => {
-    injectThemeSheet();
-  }, []);
-
-  const loadStandings = async () => {
-    const [groupA, groupB, finals, rosterData] = await Promise.all([
-      api.getStandings('A'),
-      api.getStandings('B'),
-      api.getStandings('finals'),
-      api.getRoster()
-    ]);
-
-    setStandings({ A: groupA.teams, B: groupB.teams, finals: finals.teams });
-    setRoster(rosterData.teams);
-  };
+    persistState(tournament);
+  }, [tournament]);
 
   useEffect(() => {
-    loadStandings().catch((error) => setStatusMessage(error.message));
-  }, []);
+    const selectedTeams = getGroupTeams(tournament.teams, draft.group);
+    setDraft((current) => ({
+      ...current,
+      rows: createDraftRows(selectedTeams)
+    }));
+  }, [draft.group, tournament.teams]);
 
-  const currentRows = activeTab === 'A' ? standings.A : activeTab === 'B' ? standings.B : standings.finals;
+  const totalPoints = tournament.teams.reduce((sum, team) => sum + team.totalPoints, 0);
+  const liveLeader = sortTeams(tournament.teams)[0];
 
-  const registerTeam = async (payload) => {
-    await api.registerTeam(payload);
-    setStatusMessage(`Registered ${payload.teamName || 'team'} into Group ${payload.bracketGroup}`);
-    await loadStandings();
+  const submitMatch = () => {
+    try {
+      if (draft.passkey !== ADMIN_PASSKEY) {
+        throw new Error('Invalid admin key');
+      }
+
+      const groupTeams = getGroupTeams(tournament.teams, draft.group);
+      const scoreEntries = validateScoreEntries(
+        draft.rows.map((row) => ({
+          teamId: row.teamId,
+          teamName: row.teamName,
+          placement: Number(row.placement),
+          kills: Number(row.kills || 0)
+        }))
+      );
+
+      if (scoreEntries.length !== groupTeams.length) {
+        throw new Error(`Group ${draft.group} needs ${groupTeams.length} scored teams`);
+      }
+
+      const placements = new Set();
+      scoreEntries.forEach((entry) => {
+        if (!Number.isInteger(entry.placement) || entry.placement < 1 || entry.placement > 12) {
+          throw new Error('Placements must be whole numbers between 1 and 12');
+        }
+
+        if (placements.has(entry.placement)) {
+          throw new Error('Each placement can only be used once per match');
+        }
+
+        placements.add(entry.placement);
+      });
+
+      const nextTournament = clone(tournament);
+
+      scoreEntries.forEach((entry) => {
+        const team = nextTournament.teams.find((candidate) => candidate.id === entry.teamId);
+        if (!team) return;
+        applyMatchScore(team, entry.placement, entry.kills, draft.matchNumber);
+      });
+
+      refreshQualification(nextTournament.teams);
+      setTournament(nextTournament);
+      setStatusMessage(`Saved Group ${draft.group} Match ${draft.matchNumber}.`);
+      setDraft((current) => ({
+        ...current,
+        rows: createDraftRows(getGroupTeams(nextTournament.teams, draft.group))
+      }));
+    } catch (error) {
+      setStatusMessage(error.message || 'Unable to save match results.');
+    }
   };
 
-  const submitScorecard = async (payload) => {
-    await api.submitMatch(payload);
-    setStatusMessage(`Scorecard saved for Group ${payload.group} Match ${payload.matchNumber}`);
-    await loadStandings();
-  };
-
-  const advanceFinals = async (passkey) => {
-    await api.advanceFinals({ passkey });
-    setStatusMessage('Finals phase activated');
-    await loadStandings();
+  const copyShareLink = async () => {
+    try {
+      const link = buildShareLink(tournament);
+      await navigator.clipboard.writeText(link);
+      setStatusMessage('Share link copied to clipboard.');
+    } catch {
+      setStatusMessage('Copy failed. Your browser may block clipboard access.');
+    }
   };
 
   return (
-    <main className="ff-shell">
-      <section className="ff-hero">
-        <div>
-          <p className="ff-kicker">Free Fire Booyah Control Center</p>
-          <h1 className="ff-title">Tournament Management Interface</h1>
-          <p className="ff-subtitle">
-            Dark neutral surfaces, aggressive neon orange accents, angular military-grade framing, and a dense leaderboard
-            architecture built for fast operator scanning on Vercel-ready deployments.
-          </p>
+    <main className="ff-app-shell">
+      <motion.section className="ff-hero" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+        <div className="ff-hero-copy">
+          <Pill tone="accent">Free Fire Tournament Leaderboard</Pill>
+          <h1>College Championship Control Room</h1>
         </div>
-        <div className="ff-stats">
-          <Stat label="Qualifier Format" value="3 Matches" />
-          <Stat label="Promotion Rule" value="Top 6 Advance" />
-          <Stat label="Scoring" value="12-Point Scale" />
+
+        <div className="ff-hero-stats">
+          <StatCard label="Registered teams" value="21" note="11 in Group A, 10 in Group B" />
+          <StatCard label="Round format" value="3 Matches" note="1 point per kill" />
+          <StatCard label="Qualification" value={qualificationUnlocked ? 'Unlocked' : 'Pending'} note="Top 6 from each group after full entry" />
+          <StatCard label="Live leader" value={liveLeader?.teamName || 'Loading'} note={`${totalPoints} total points across the board`} />
         </div>
+      </motion.section>
+
+      <section className="ff-grid ff-grid-two">
+        <TeamTable title="Group A Standings" group="A" teams={groupA} qualificationUnlocked={qualificationUnlocked} />
+        <TeamTable title="Group B Standings" group="B" teams={groupB} qualificationUnlocked={qualificationUnlocked} />
       </section>
 
-      <nav className="ff-tabs" aria-label="Tournament sections">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            className={`ff-tab ${activeTab === tab.id ? 'ff-tab-active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
-            type="button"
-          >
-            {tab.label}
-          </button>
-        ))}
-      </nav>
+      <section className="ff-grid ff-grid-tight">
+        <FinalsPreview teams={finalsPreview} qualificationUnlocked={qualificationUnlocked} />
+      </section>
 
-      <div className="ff-grid">
-        <Leaderboard
-          title={activeTab === 'A' ? 'Group A Standings' : activeTab === 'B' ? 'Group B Standings' : 'Grand Finals Tracking'}
-          rows={currentRows}
-        />
-        <RosterGrid rows={roster} />
-        <AdminConsole onRegisterTeam={registerTeam} onSubmitScorecard={submitScorecard} onAdvanceFinals={advanceFinals} statusMessage={statusMessage} setStatusMessage={setStatusMessage} />
-      </div>
+      <MatchEditor draft={draft} setDraft={setDraft} onSubmit={submitMatch} onCopyLink={copyShareLink} statusMessage={statusMessage} />
     </main>
   );
 }
