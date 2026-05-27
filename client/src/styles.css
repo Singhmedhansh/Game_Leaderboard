@@ -103,10 +103,22 @@ input, select {
   mix-blend-mode: screen;
 }
 
-.ff-effect-gun { top: 16px; right: 18px; opacity: 0.95; transform: translateZ(0); }
-.ff-effect-grenade { top: 72px; left: 28px; opacity: 0.95; }
-.ff-effect-blood { bottom: 12px; right: 38px; opacity: 0.85; }
-.ff-effect-blood-sm { bottom: 86px; left: 58px; opacity: 0.92; }
+.ff-impact-flash {
+  position: absolute;
+  inset: -8px;
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 36, 69, 0.58), rgba(255, 36, 69, 0.16) 32%, transparent 68%),
+    linear-gradient(135deg, rgba(255, 122, 24, 0.24), rgba(255, 36, 69, 0.1));
+  box-shadow: 0 0 0 1px rgba(255, 122, 24, 0.12), 0 0 80px rgba(255, 36, 69, 0.24) inset;
+  filter: blur(0.2px);
+}
+
+.ff-effect-gun { top: 12px; right: 22px; opacity: 1; transform: translateZ(0) scale(1.08); }
+.ff-effect-grenade { top: 64px; left: 18px; opacity: 1; transform: scale(1.2); }
+.ff-effect-blood { bottom: 0; right: 18px; opacity: 1; }
+.ff-effect-blood-sm { bottom: 88px; left: 34px; opacity: 1; }
+.ff-effect-slashed { left: 28%; top: 2%; opacity: 0.9; }
 
 .ff-particles {
   position: absolute;
@@ -116,13 +128,13 @@ input, select {
 
 .ff-particle {
   position: absolute;
-  left: calc(50% + 40px);
-  top: calc(50% - 10px);
-  width: 8px;
-  height: 8px;
-  border-radius: 6px;
+  left: calc(44% + 48px);
+  top: calc(50% - 18px);
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
   background: linear-gradient(180deg, #ffd6b3, #ff6d00);
-  box-shadow: 0 6px 18px rgba(255, 100, 0, 0.12);
+  box-shadow: 0 8px 22px rgba(255, 36, 69, 0.24);
 }
 
 .ff-hero-copy h1,
