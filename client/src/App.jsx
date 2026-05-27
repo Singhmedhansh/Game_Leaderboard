@@ -260,6 +260,7 @@ function FinalsPreview({ teams, qualificationUnlocked }) {
 
 function MatchEditor({ draft, setDraft, onSubmit, onDeleteMatch, onCopyLink, statusMessage }) {
   const [showAdminKey, setShowAdminKey] = useState(false);
+  const maxPlacement = draft.rows.length;
 
   const updateRow = (index, field, value) => {
     setDraft((current) => {
@@ -389,7 +390,8 @@ function MatchEditor({ draft, setDraft, onSubmit, onDeleteMatch, onCopyLink, sta
 
       <div className="ff-scorefoot">
         <Pill tone="warning">1 kill = 1 point</Pill>
-        <Pill tone="neutral">Placement scale: 12, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0</Pill>
+        <Pill tone="neutral">Allowed placements: 1-{maxPlacement}</Pill>
+        <Pill tone="neutral">Points by placement: 1st=12, 2nd=9, 3rd=8, 4th=7, 5th=6, 6th=5, 7th=4, 8th=3, 9th=2, 10th=1, 11th/12th=0</Pill>
       </div>
     </section>
   );
