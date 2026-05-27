@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ADMIN_PASSKEY,
   MATCH_COUNT,
+  MATCH_TEAM_COUNT,
   QUALIFIER_COUNT,
   applyMatchScore,
   buildFinalists,
@@ -260,7 +261,7 @@ function FinalsPreview({ teams, qualificationUnlocked }) {
 
 function MatchEditor({ draft, setDraft, onSubmit, onDeleteMatch, onCopyLink, statusMessage }) {
   const [showAdminKey, setShowAdminKey] = useState(false);
-  const maxPlacement = draft.rows.length;
+  const maxPlacement = MATCH_TEAM_COUNT;
 
   const updateRow = (index, field, value) => {
     setDraft((current) => {
@@ -434,7 +435,7 @@ export default function App() {
       }
 
       const groupTeams = getGroupTeams(tournament.teams, draft.group);
-      const maxPlacement = groupTeams.length <= 12 ? groupTeams.length : 12;
+      const maxPlacement = MATCH_TEAM_COUNT;
 
       draft.rows.forEach((row) => {
         const placement = Number(row.placement);
