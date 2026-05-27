@@ -15,10 +15,8 @@ import {
   validateScoreEntries
 } from './lib/rules.js';
 import './styles.css';
-import AnimatedEffects from './components/AnimatedEffects.jsx';
 
 const STORAGE_KEY = 'ff-leaderboard-state-v3';
-const EFFECTS_KEY = 'ff-effects-enabled-v1';
 
 const motionRows = {
   hidden: { opacity: 0, y: 12 },
@@ -261,7 +259,7 @@ function FinalsPreview({ teams, qualificationUnlocked }) {
   );
 }
 
-function MatchEditor({ draft, setDraft, onSubmit, onDeleteMatch, onCopyLink, statusMessage, effectsEnabled, onToggleEffects }) {
+function MatchEditor({ draft, setDraft, onSubmit, onDeleteMatch, onCopyLink, statusMessage }) {
   const [showAdminKey, setShowAdminKey] = useState(false);
   const maxPlacement = MATCH_TEAM_COUNT;
 
@@ -337,9 +335,6 @@ function MatchEditor({ draft, setDraft, onSubmit, onDeleteMatch, onCopyLink, sta
           </button>
           <button type="button" className="ff-action ff-action-secondary" onClick={onCopyLink}>
             Copy Share Link
-          </button>
-          <button type="button" className="ff-action ff-action-secondary" onClick={onToggleEffects}>
-            {effectsEnabled ? 'Effects: On' : 'Effects: Off'}
           </button>
         </div>
 
@@ -439,24 +434,6 @@ export default function App() {
     rows: createDraftRows(getGroupTeams(loadInitialState().teams, 'A'), 1)
   }));
   const [statusMessage, setStatusMessage] = useState('Ready to update the leaderboard.');
-  const [effectsEnabled, setEffectsEnabled] = useState(() => {
-    try {
-      const raw = window.localStorage.getItem(EFFECTS_KEY);
-      if (raw === 'false') return false;
-      return true;
-    } catch {
-      return true;
-    }
-  });
-
-  const [burstKey, setBurstKey] = useState(0);
-  const [muzzleKey, setMuzzleKey] = useState(0);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(EFFECTS_KEY, effectsEnabled ? 'true' : 'false');
-    } catch {}
-  }, [effectsEnabled]);
 
   const groupA = useMemo(() => sortTeams(getGroupTeams(tournament.teams, 'A')), [tournament.teams]);
   const groupB = useMemo(() => sortTeams(getGroupTeams(tournament.teams, 'B')), [tournament.teams]);
@@ -537,10 +514,6 @@ export default function App() {
       refreshQualification(nextTournament.teams);
       setTournament(nextTournament);
       setStatusMessage(`Saved Group ${draft.group} Match ${draft.matchNumber}. You can edit and save again anytime.`);
-      if (effectsEnabled) {
-        setBurstKey(Date.now());
-        setMuzzleKey(Date.now());
-      }
       setDraft((current) => ({
         ...current,
         rows: createDraftRows(getGroupTeams(nextTournament.teams, draft.group), current.matchNumber)
@@ -563,9 +536,6 @@ export default function App() {
       refreshQualification(nextTournament.teams);
       setTournament(nextTournament);
       setStatusMessage(`Deleted Group ${draft.group} Match ${draft.matchNumber}.`);
-      if (effectsEnabled) {
-        setBurstKey(Date.now());
-      }
       setDraft((current) => ({
         ...current,
         rows: createDraftRows(getGroupTeams(nextTournament.teams, draft.group), current.matchNumber)
@@ -585,11 +555,9 @@ export default function App() {
 
       await navigator.clipboard.writeText(link);
       setStatusMessage('Share link copied to clipboard.');
-      if (effectsEnabled) setBurstKey(Date.now());
     } catch {
       window.prompt('Copy this share link', link);
       setStatusMessage('Share link generated. Copy it from the popup.');
-      if (effectsEnabled) setBurstKey(Date.now());
     }
   };
 
@@ -612,7 +580,6 @@ export default function App() {
             note={`${totalPoints} total points across the board`}
           />
         </div>
-        <AnimatedEffects enabled={effectsEnabled} burstKey={burstKey} muzzleKey={muzzleKey} />
       </motion.section>
 
       <section className="ff-grid ff-grid-two">
@@ -631,8 +598,6 @@ export default function App() {
         onDeleteMatch={deleteMatch}
         onCopyLink={copyShareLink}
         statusMessage={statusMessage}
-        effectsEnabled={effectsEnabled}
-        onToggleEffects={() => setEffectsEnabled((v) => !v)}
       />
     </main>
   );

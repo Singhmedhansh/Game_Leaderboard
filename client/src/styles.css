@@ -25,53 +25,6 @@ html {
 }
 
 body {
-  margin: 0;
-  min-height: 100vh;
-  color: var(--ff-text);
-  background:
-    radial-gradient(circle at 15% 8%, rgba(255, 122, 24, 0.2), transparent 24%),
-    radial-gradient(circle at 85% 12%, rgba(53, 213, 255, 0.14), transparent 20%),
-    linear-gradient(180deg, #080a0f 0%, #0a1020 48%, #05070a 100%);
-  font-family: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
-  overflow-x: hidden;
-}
-
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-  background-size: 46px 46px;
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent 92%);
-  opacity: 0.7;
-}
-
-a, button, input, select {
-  font: inherit;
-}
-
-button {
-  cursor: pointer;
-}
-
-input, select {
-  outline: none;
-}
-
-.ff-app-shell {
-  position: relative;
-  z-index: 1;
-  width: min(1560px, calc(100% - 28px));
-  margin: 0 auto;
-  padding: 24px 0 48px;
-}
-
-.ff-hero,
-.ff-panel {
-  border: 1px solid var(--ff-line);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
   box-shadow: var(--ff-shadow);
   backdrop-filter: blur(18px);
@@ -631,34 +584,112 @@ input, select {
     padding-top: 12px;
   }
 
+  .ff-hero {
+    padding: 18px;
+    gap: 16px;
+  }
+
   .ff-hero,
   .ff-panel {
     border-radius: 22px;
   }
 
   .ff-hero-copy h1 {
-    font-size: clamp(2rem, 11vw, 3.6rem);
+    font-size: clamp(1.8rem, 12vw, 3rem);
+    line-height: 0.96;
+  }
+
+  .ff-hero-copy p {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .ff-hero-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .ff-stat-card {
+    padding: 14px;
+  }
+
+  .ff-stat-value {
+    font-size: 20px;
+  }
+
+  .ff-panel-head {
+    padding: 16px 14px 12px;
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .ff-panel-head p {
+    font-size: 12px;
+  }
+
+  .ff-table tbody td {
+    font-size: 12px;
+    padding: 11px 10px;
+  }
+
+  .ff-table thead th {
+    font-size: 9px;
+    padding: 12px 10px;
+  }
+
+  .ff-scorecard-shell,
+  .ff-scorefoot,
+  .ff-editor-toolbar {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .ff-scorecard-head {
+    display: none;
+  }
+
+  .ff-score-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .ff-score-team {
+    align-items: flex-start;
+  }
+
+  .ff-score-team strong {
+    font-size: 12px;
+  }
+
+  .ff-score-team span {
+    font-size: 11px;
+  }
+
+  .ff-field-small {
+    max-width: none;
+  }
+
+  .ff-action-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ff-action-row .ff-action {
+    width: 100%;
+  }
+
+  .ff-editor-status {
+    min-height: 54px;
+    font-size: 12px;
+    line-height: 1.45;
   }
 
   .ff-finals-grid {
     grid-template-columns: 1fr;
   }
 
-  .ff-scorecard-head,
-  .ff-score-row {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .ff-scorefoot {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .ff-action-row {
-    flex-direction: column;
-  }
-
-  .ff-field-small {
-    max-width: none;
   }
 }
