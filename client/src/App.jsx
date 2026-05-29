@@ -7,9 +7,12 @@ import {
   QUALIFIER_COUNT,
   applyMatchScore,
   buildFinalists,
+  buildPodium,
   clearMatchScore,
   createTournamentState,
+  createTeamRecord,
   isQualificationUnlocked,
+  isRoundComplete,
   refreshQualification,
   sortTeams,
   validateScoreEntries
@@ -32,6 +35,14 @@ const clone = (value) => JSON.parse(JSON.stringify(value));
 const buildSnapshot = (state) => ({
   teams: state.teams.map((team) => ({
     id: team.id,
+    teamName: team.teamName,
+    leaderName: team.leaderName,
+    leaderInGameName: team.leaderInGameName,
+    leaderUid: team.leaderUid,
+    memberNames: team.memberNames,
+    playerUids: team.playerUids,
+    bracketGroup: team.bracketGroup,
+    displayOrder: team.displayOrder,
     matchesPlayed: team.matchesPlayed,
     totalBooyahs: team.totalBooyahs,
     totalKills: team.totalKills,
@@ -48,24 +59,25 @@ const hydrateState = (snapshot) => {
     return fresh;
   }
 
-  const statsById = new Map(snapshot.teams.map((entry) => [entry.id, entry]));
+  const hydratedTeams = snapshot.teams.map((saved) => {
+    const fallbackGroup = saved.bracketGroup || 'A';
+    const baseTeam = fresh.teams.find((team) => team.id === saved.id);
 
-  fresh.teams = fresh.teams.map((team) => {
-    const saved = statsById.get(team.id);
-    if (!saved) {
-      return team;
+    if (baseTeam) {
+      return {
+        ...baseTeam,
+        ...createTeamRecord({ ...baseTeam, ...saved }, baseTeam.bracketGroup)
+      };
     }
 
-    return {
-      ...team,
-      matchesPlayed: Number(saved.matchesPlayed || 0),
-      totalBooyahs: Number(saved.totalBooyahs || 0),
-      totalKills: Number(saved.totalKills || 0),
-      totalPoints: Number(saved.totalPoints || 0),
-      isQualified: Boolean(saved.isQualified),
-      matchHistory: clone(saved.matchHistory || team.matchHistory)
-    };
+    return createTeamRecord(saved, fallbackGroup);
   });
+
+  fresh.teams = hydratedTeams.length ? hydratedTeams : fresh.teams;
+
+  if (isQualificationUnlocked(fresh.teams) && !fresh.teams.some((team) => team.bracketGroup === 'finals')) {
+    fresh.teams = [...fresh.teams, ...buildFinalists(fresh.teams)];
+  }
 
   refreshQualification(fresh.teams);
   return fresh;
@@ -124,6 +136,29 @@ const createDraftRows = (teams, matchNumber) =>
   }));
 
 const getGroupTeams = (teams, group) => teams.filter((team) => team.bracketGroup === group);
+
+const getStageTeams = (teams, group) => getGroupTeams(teams, group);
+
+const syncFinalists = (teams) => {
+  const finalsTeams = getStageTeams(teams, 'finals');
+  const finalsStarted = finalsTeams.some(
+    (team) => team.matchesPlayed > 0 || team.totalPoints > 0 || team.totalKills > 0 || team.totalBooyahs > 0
+  );
+
+  if (isQualificationUnlocked(teams) && !finalsTeams.length) {
+    const seeded = [...teams, ...buildFinalists(teams)];
+    refreshQualification(seeded);
+    return seeded;
+  }
+
+  if (!isQualificationUnlocked(teams) && finalsTeams.length && !finalsStarted) {
+    const withoutFinals = teams.filter((team) => team.bracketGroup !== 'finals');
+    refreshQualification(withoutFinals);
+    return withoutFinals;
+  }
+
+  return teams;
+};
 
 function Pill({ children, tone = 'neutral' }) {
   return <span className={`ff-pill ff-pill-${tone}`}>{children}</span>;
@@ -217,49 +252,95 @@ function TeamTable({ title, group, teams, qualificationUnlocked }) {
   );
 }
 
-function FinalsPreview({ teams, qualificationUnlocked }) {
+function FinalsPreview({ finalists, podium, qualificationUnlocked, finalsReady, finalsComplete }) {
   return (
     <section className="ff-panel">
       <div className="ff-panel-head">
         <div>
           <p className="ff-kicker">Finals Preview</p>
           <h2>Top 12 Bracket</h2>
-          <p>{qualificationUnlocked ? 'Top 6 from each group are selected for the final lobby preview.' : 'Finals lineup appears after all 3 matches are entered for every team.'}</p>
+          <p>
+            {qualificationUnlocked
+              ? 'The top 6 from Group A and the top 6 from Group B move into 3 more finals matches.'
+              : 'Finals lineup appears after all 3 matches are entered for every team in Group A and Group B.'}
+          </p>
         </div>
-        <Pill tone="warning">{qualificationUnlocked ? 'Auto-built from live standings' : 'Waiting for complete scoring'}</Pill>
+        <Pill tone={finalsComplete ? 'accent' : finalsReady ? 'warning' : 'dark'}>
+          {finalsComplete ? 'Champions crowned' : finalsReady ? 'Finals scoring live' : 'Waiting for qualifiers'}
+        </Pill>
       </div>
 
-      <div className="ff-finals-grid">
-        {qualificationUnlocked ? (
-          teams.map((team, index) => (
-            <motion.article
-              key={team.id}
-              className="ff-final-card"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.03, duration: 0.22 }}
-            >
-              <div className="ff-final-head">
-                <span className="ff-final-slot">{index + 1}</span>
-                <Pill tone={team.bracketGroup === 'A' ? 'accent' : 'cyan'}>{team.bracketGroup}</Pill>
-              </div>
-              <h3>{team.teamName}</h3>
-              <p>{team.leaderName}</p>
-              <p className="ff-muted">{team.totalPoints} pts • {team.totalKills} kills</p>
-            </motion.article>
-          ))
-        ) : (
-          <div className="ff-final-card">
-            <h3>Qualification Not Ready</h3>
-            <p>Complete all 3 matches for all teams in Group A and Group B to unlock finalists.</p>
+      {qualificationUnlocked ? (
+        <>
+          <div className="ff-finals-grid">
+            {finalists.map((team, index) => (
+              <motion.article
+                key={team.id}
+                className="ff-final-card"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.03, duration: 0.22 }}
+              >
+                <div className="ff-final-head">
+                  <span className="ff-final-slot">{index + 1}</span>
+                  <Pill tone="warning">Finals</Pill>
+                </div>
+                <h3>{team.teamName}</h3>
+                <p>{team.leaderName}</p>
+                <p className="ff-muted">
+                  {team.totalPoints} pts • {team.totalKills} kills
+                </p>
+              </motion.article>
+            ))}
           </div>
-        )}
-      </div>
+
+          <div className="ff-panel-head">
+            <div>
+              <p className="ff-kicker">Podium</p>
+              <h2>1st, 2nd, 3rd</h2>
+              <p>{finalsComplete ? 'These are the top 3 teams after the finals leaderboard settles.' : 'Play all 3 finals matches to reveal the tournament winners.'}</p>
+            </div>
+            <Pill tone={finalsComplete ? 'accent' : 'dark'}>{finalsComplete ? 'Winners locked' : 'Finals pending'}</Pill>
+          </div>
+
+          <div className="ff-finals-grid">
+            {finalsComplete ? (
+              podium.map((team, index) => (
+                <motion.article
+                  key={team.id}
+                  className="ff-final-card"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.03, duration: 0.22 }}
+                >
+                  <div className="ff-final-head">
+                    <span className="ff-final-slot">{index + 1}</span>
+                    <Pill tone={index === 0 ? 'accent' : index === 1 ? 'warning' : 'cyan'}>{index === 0 ? '1st' : index === 1 ? '2nd' : '3rd'}</Pill>
+                  </div>
+                  <h3>{team.teamName}</h3>
+                  <p>{team.leaderName}</p>
+                  <p className="ff-muted">{team.totalPoints} pts • {team.totalKills} kills</p>
+                </motion.article>
+              ))
+            ) : (
+              <div className="ff-final-card">
+                <h3>Finals In Progress</h3>
+                <p>Once the 12 finalists finish their 3 championship matches, the top 3 teams will be crowned here.</p>
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="ff-final-card">
+          <h3>Qualification Not Ready</h3>
+          <p>Complete all 3 matches for all teams in Group A and Group B to unlock finalists.</p>
+        </div>
+      )}
     </section>
   );
 }
 
-function MatchEditor({ draft, setDraft, onSubmit, onDeleteMatch, onCopyLink, statusMessage }) {
+function MatchEditor({ draft, setDraft, onSubmit, onDeleteMatch, onCopyLink, statusMessage, finalsAvailable }) {
   const [showAdminKey, setShowAdminKey] = useState(false);
   const maxPlacement = MATCH_TEAM_COUNT;
 
@@ -292,6 +373,9 @@ function MatchEditor({ draft, setDraft, onSubmit, onDeleteMatch, onCopyLink, sta
           >
             <option value="A">Group A</option>
             <option value="B">Group B</option>
+            <option value="finals" disabled={!finalsAvailable}>
+              Finals
+            </option>
           </select>
         </label>
 
@@ -437,8 +521,15 @@ export default function App() {
 
   const groupA = useMemo(() => sortTeams(getGroupTeams(tournament.teams, 'A')), [tournament.teams]);
   const groupB = useMemo(() => sortTeams(getGroupTeams(tournament.teams, 'B')), [tournament.teams]);
+  const finalsTeams = useMemo(() => sortTeams(getStageTeams(tournament.teams, 'finals')), [tournament.teams]);
   const qualificationUnlocked = useMemo(() => isQualificationUnlocked(tournament.teams), [tournament.teams]);
-  const finalsPreview = useMemo(() => (qualificationUnlocked ? buildFinalists(tournament.teams) : []), [qualificationUnlocked, tournament.teams]);
+  const finalsReady = useMemo(() => finalsTeams.length > 0, [finalsTeams]);
+  const finalsComplete = useMemo(() => isRoundComplete(finalsTeams), [finalsTeams]);
+  const finalsPreview = useMemo(
+    () => (finalsTeams.length ? finalsTeams : qualificationUnlocked ? buildFinalists(tournament.teams) : []),
+    [finalsTeams, qualificationUnlocked, tournament.teams]
+  );
+  const finalsPodium = useMemo(() => (finalsComplete ? buildPodium(finalsTeams) : []), [finalsComplete, finalsTeams]);
 
   useEffect(() => {
     persistState(tournament);
@@ -453,7 +544,10 @@ export default function App() {
   }, [draft.group, draft.matchNumber, tournament.teams]);
 
   const totalPoints = tournament.teams.reduce((sum, team) => sum + team.totalPoints, 0);
-  const liveLeader = sortTeams(tournament.teams)[0];
+  const liveLeaderPool = finalsTeams.some((team) => team.matchesPlayed > 0 || team.totalPoints > 0)
+    ? tournament.teams
+    : tournament.teams.filter((team) => team.bracketGroup !== 'finals');
+  const liveLeader = sortTeams(liveLeaderPool)[0];
 
   const submitMatch = () => {
     try {
@@ -512,6 +606,7 @@ export default function App() {
       });
 
       refreshQualification(nextTournament.teams);
+      nextTournament.teams = syncFinalists(nextTournament.teams);
       setTournament(nextTournament);
       setStatusMessage(`Saved Group ${draft.group} Match ${draft.matchNumber}. You can edit and save again anytime.`);
       setDraft((current) => ({
@@ -534,6 +629,7 @@ export default function App() {
       groupTeams.forEach((team) => clearMatchScore(team, draft.matchNumber));
 
       refreshQualification(nextTournament.teams);
+      nextTournament.teams = syncFinalists(nextTournament.teams);
       setTournament(nextTournament);
       setStatusMessage(`Deleted Group ${draft.group} Match ${draft.matchNumber}.`);
       setDraft((current) => ({
@@ -588,7 +684,13 @@ export default function App() {
       </section>
 
       <section className="ff-grid ff-grid-tight">
-        <FinalsPreview teams={finalsPreview} qualificationUnlocked={qualificationUnlocked} />
+        <FinalsPreview
+          finalists={finalsPreview}
+          podium={finalsPodium}
+          qualificationUnlocked={qualificationUnlocked}
+          finalsReady={finalsReady}
+          finalsComplete={finalsComplete}
+        />
       </section>
 
       <MatchEditor
@@ -598,6 +700,7 @@ export default function App() {
         onDeleteMatch={deleteMatch}
         onCopyLink={copyShareLink}
         statusMessage={statusMessage}
+        finalsAvailable={qualificationUnlocked || finalsTeams.length > 0}
       />
     </main>
   );

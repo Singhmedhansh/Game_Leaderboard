@@ -6,6 +6,7 @@ export const QUALIFIER_COUNT = 6;
 export const MATCH_COUNT = 3;
 export const GROUP_A_COUNT = 10;
 export const GROUP_B_COUNT = 11;
+export const PODIUM_COUNT = 3;
 
 export const scoreTable = {
   1: 12,
@@ -203,6 +204,8 @@ const hasCompletedAllMatches = (team) =>
     return Number.isInteger(placement) && placement >= 1 && placement <= MATCH_TEAM_COUNT && Number.isFinite(kills) && kills >= 0;
   });
 
+export const isRoundComplete = (teams) => Array.isArray(teams) && teams.length > 0 && teams.every(hasCompletedAllMatches);
+
 export const isQualificationUnlocked = (teams) => {
   const groupA = teams.filter((team) => team.bracketGroup === 'A');
   const groupB = teams.filter((team) => team.bracketGroup === 'B');
@@ -211,7 +214,7 @@ export const isQualificationUnlocked = (teams) => {
     return false;
   }
 
-  return groupA.every(hasCompletedAllMatches) && groupB.every(hasCompletedAllMatches);
+  return isRoundComplete(groupA) && isRoundComplete(groupB);
 };
 
 export const refreshQualification = (teams) => {
@@ -251,3 +254,5 @@ export const buildFinalists = (teams) => {
     matchHistory: makeMatchHistory()
   }));
 };
+
+export const buildPodium = (teams) => sortTeams(teams).slice(0, PODIUM_COUNT);
