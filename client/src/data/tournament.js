@@ -5,6 +5,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'Gopal Reddy',
     leaderInGameName: 'JD',
     leaderUid: '2286436798',
+    bracketGroup: 'A',
     memberNames: ['Bhaskar', 'Pranil', 'Pavan']
   },
   {
@@ -13,6 +14,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'Shrinivas',
     leaderInGameName: 'OTG SHRID',
     leaderUid: '961710076',
+    bracketGroup: 'A',
     memberNames: ['Vikas', 'Prajwal', 'Jeevan']
   },
   {
@@ -21,6 +23,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'Dhanush',
     leaderInGameName: 'Dhanush M',
     leaderUid: '1899984581',
+    bracketGroup: 'A',
     memberNames: ['Skanda S', 'Rohit Kumar', 'Ragoththam', 'Dhanush M']
   },
   {
@@ -29,6 +32,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'Pavan G',
     leaderInGameName: 'PAVAN',
     leaderUid: '600242690',
+    bracketGroup: 'A',
     memberNames: ['Ankit Reddy', 'Dhruv T', 'Mithun']
   },
   {
@@ -37,6 +41,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'Rachit Kalya',
     leaderInGameName: 'RACHIT',
     leaderUid: '1629171127',
+    bracketGroup: 'B',
     memberNames: ['Yet to decide']
   },
   {
@@ -45,6 +50,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'NANDA KUMAR H R',
     leaderInGameName: 'I?joker.ff',
     leaderUid: '2244201549',
+    bracketGroup: 'A',
     memberNames: ['B Gyanendra Reddy', 'Nanda Kumar']
   },
   {
@@ -53,6 +59,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'Abhishek H',
     leaderInGameName: 'BL4ZE !!',
     leaderUid: '1176124851',
+    bracketGroup: 'A',
     memberNames: ['Sagar GR', 'Ayush K Bhat', 'Irfan']
   },
   {
@@ -61,6 +68,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'Suhas',
     leaderInGameName: 'Hunter',
     leaderUid: '2206503275',
+    bracketGroup: 'B',
     memberNames: ['Vishal', 'Dakshath', 'Amith']
   },
   {
@@ -69,6 +77,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'Bhuvan',
     leaderInGameName: 'MBG:BhuvanaOP',
     leaderUid: '2596875123',
+    bracketGroup: 'B',
     memberNames: ['Phani Saran', 'Shanmukh', 'Rahu']
   },
   {
@@ -77,6 +86,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'Ashrith P Achar',
     leaderInGameName: 'ALPHA',
     leaderUid: '1651513420',
+    bracketGroup: 'B',
     memberNames: ['Rahul', 'Sharath', 'Arpith', 'Ashrith']
   },
   {
@@ -85,6 +95,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'Irfan Ali M A',
     leaderInGameName: 'darkrider',
     leaderUid: '2148444092',
+    bracketGroup: 'B',
     memberNames: ['NO/2569321306', 'TE-PAHADI', 'Pahadi']
   },
   {
@@ -93,6 +104,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'A. Kiran Varma',
     leaderInGameName: 'Lionellord69',
     leaderUid: '7862316469',
+    bracketGroup: 'B',
     memberNames: ['Mahesh', 'Manvith', 'Vivek']
   },
   {
@@ -101,6 +113,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'Karthik BH',
     leaderInGameName: 'Top VICTOR',
     leaderUid: '887152347',
+    bracketGroup: 'A',
     memberNames: ['Karthik BH', 'Anirudh SJ', 'Tejas A', 'Pratheek T. M']
   },
   {
@@ -109,6 +122,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'Takshil Shetty',
     leaderInGameName: 'LVL-X STRIKE',
     leaderUid: '2118952697',
+    bracketGroup: 'A',
     memberNames: ['Takshil Shetty', 'AJ Varun', 'Manmith Shetty', 'Chinmaya Krishna']
   },
   {
@@ -117,6 +131,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'S Venkat Charan',
     leaderInGameName: 'JSR-VECNA',
     leaderUid: '585854570',
+    bracketGroup: 'B',
     memberNames: ['Sujan', 'Rohit', 'Rajesab']
   },
   {
@@ -125,6 +140,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'Yashas Bapuji Chikkanagapp',
     leaderInGameName: 'Tx-yashas',
     leaderUid: '1922879331',
+    bracketGroup: 'B',
     memberNames: ['Guruju Navatej', 'Sujan S C R', 'Nikhil Bhandage']
   },
   {
@@ -133,6 +149,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'Abhilash Maiya Y',
     leaderInGameName: 'FB ABHILASH',
     leaderUid: '1934496258',
+    bracketGroup: 'A',
     memberNames: ['Mohith V', 'N Abhyudh Reddy', 'Karthik V Hegde']
   },
   {
@@ -141,6 +158,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'Pranav Bhavimani',
     leaderInGameName: 'Pranav__op69',
     leaderUid: '5061047324',
+    bracketGroup: 'B',
     memberNames: ['Yashas Reddy', 'Rohan G', 'H S']
   },
   {
@@ -149,6 +167,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'Kishan NR',
     leaderInGameName: 'Kishan^_f',
     leaderUid: '1993655877',
+    bracketGroup: 'A',
     memberNames: ['Shreyas Gowda HD', 'Kishan NR']
   },
   {
@@ -157,6 +176,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'Kishan',
     leaderInGameName: "Kishu'gamer",
     leaderUid: '1583367542',
+    bracketGroup: 'B',
     memberNames: ['Virat', 'Neeraj']
   },
   {
@@ -165,6 +185,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'Rayhan',
     leaderInGameName: 'NL ICONIC',
     leaderUid: '1671153861',
+    bracketGroup: 'A',
     memberNames: ['Kishore', 'Conquer']
   }
 ];
