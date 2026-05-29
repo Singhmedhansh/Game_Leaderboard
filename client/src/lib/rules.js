@@ -261,3 +261,16 @@ export const buildFinalists = (teams) => {
 };
 
 export const buildPodium = (teams) => sortTeams(teams).slice(0, PODIUM_COUNT);
+
+export const resetTournamentScores = (teams) =>
+  teams
+    .filter((team) => team.bracketGroup !== 'finals')
+    .map((team) => ({
+      ...team,
+      matchesPlayed: 0,
+      totalBooyahs: 0,
+      totalKills: 0,
+      totalPoints: 0,
+      isQualified: false,
+      matchHistory: makeMatchHistory()
+    }));

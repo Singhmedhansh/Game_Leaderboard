@@ -14,6 +14,7 @@ import {
   isQualificationUnlocked,
   isRoundComplete,
   refreshQualification,
+  resetTournamentScores,
   sortTeams,
   validateScoreEntries
 } from './lib/rules.js';
@@ -417,6 +418,9 @@ function MatchEditor({ draft, setDraft, onSubmit, onDeleteMatch, onCopyLink, sta
           <button type="button" className="ff-action ff-action-danger" onClick={onDeleteMatch}>
             Delete Match
           </button>
+          <button type="button" className="ff-action ff-action-secondary" onClick={resetAllResults}>
+            Reset All
+          </button>
           <button type="button" className="ff-action ff-action-secondary" onClick={onCopyLink}>
             Copy Share Link
           </button>
@@ -638,6 +642,26 @@ export default function App() {
       }));
     } catch (error) {
       setStatusMessage(error.message || 'Unable to delete match results.');
+    }
+  };
+
+  const resetAllResults = () => {
+    try {
+      if (draft.passkey !== ADMIN_PASSKEY) {
+        throw new Error('Invalid admin key');
+      }
+
+      const nextTournament = clone(tournament);
+      nextTournament.teams = resetTournamentScores(nextTournament.teams);
+      refreshQualification(nextTournament.teams);
+      setTournament(nextTournament);
+      setStatusMessage('Reset all group and finals results.');
+      setDraft((current) => ({
+        ...current,
+        rows: createDraftRows(getGroupTeams(nextTournament.teams, current.group), current.matchNumber)
+      }));
+    } catch (error) {
+      setStatusMessage(error.message || 'Unable to reset tournament results.');
     }
   };
 
