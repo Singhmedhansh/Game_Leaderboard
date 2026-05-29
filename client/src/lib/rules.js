@@ -4,8 +4,8 @@ export const ADMIN_PASSKEY = 'admin_2026';
 export const MATCH_TEAM_COUNT = 12;
 export const QUALIFIER_COUNT = 6;
 export const MATCH_COUNT = 3;
-export const GROUP_A_COUNT = 11;
-export const GROUP_B_COUNT = 10;
+export const GROUP_A_COUNT = 10;
+export const GROUP_B_COUNT = 11;
 
 export const scoreTable = {
   1: 12,
@@ -48,6 +48,7 @@ export const sortTeams = (list) =>
       right.totalPoints - left.totalPoints ||
       right.totalBooyahs - left.totalBooyahs ||
       right.totalKills - left.totalKills ||
+      Number(left.displayOrder || 0) - Number(right.displayOrder || 0) ||
       left.teamName.localeCompare(right.teamName)
   );
 
@@ -65,6 +66,7 @@ export const createTeamRecord = (payload, fallbackGroup = 'A') => {
     memberNames,
     playerUids,
     bracketGroup,
+    displayOrder: Number(payload.displayOrder || 0),
     matchesPlayed: Number(payload.matchesPlayed || 0),
     totalBooyahs: Number(payload.totalBooyahs || 0),
     totalKills: Number(payload.totalKills || 0),
