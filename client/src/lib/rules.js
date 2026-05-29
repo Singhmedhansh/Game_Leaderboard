@@ -1,6 +1,6 @@
 import { TOURNAMENT_TEAMS } from '../data/tournament.js';
 
-export const ADMIN_PASSKEY = 'admin_2026';
+export const ADMIN_PASSKEY = 'FF-Hostel#Admin2026';
 export const MATCH_TEAM_COUNT = 12;
 export const QUALIFIER_COUNT = 6;
 export const MATCH_COUNT = 3;
