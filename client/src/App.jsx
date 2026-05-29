@@ -341,7 +341,7 @@ function FinalsPreview({ finalists, podium, qualificationUnlocked, finalsReady, 
   );
 }
 
-function MatchEditor({ draft, setDraft, onSubmit, onDeleteMatch, onCopyLink, statusMessage, finalsAvailable }) {
+function MatchEditor({ draft, setDraft, onSubmit, onDeleteMatch, onResetAll, onCopyLink, statusMessage, finalsAvailable }) {
   const [showAdminKey, setShowAdminKey] = useState(false);
   const maxPlacement = MATCH_TEAM_COUNT;
 
@@ -418,7 +418,7 @@ function MatchEditor({ draft, setDraft, onSubmit, onDeleteMatch, onCopyLink, sta
           <button type="button" className="ff-action ff-action-danger" onClick={onDeleteMatch}>
             Delete Match
           </button>
-          <button type="button" className="ff-action ff-action-secondary" onClick={resetAllResults}>
+          <button type="button" className="ff-action ff-action-secondary" onClick={onResetAll}>
             Reset All
           </button>
           <button type="button" className="ff-action ff-action-secondary" onClick={onCopyLink}>
@@ -722,6 +722,7 @@ export default function App() {
         setDraft={setDraft}
         onSubmit={submitMatch}
         onDeleteMatch={deleteMatch}
+        onResetAll={resetAllResults}
         onCopyLink={copyShareLink}
         statusMessage={statusMessage}
         finalsAvailable={qualificationUnlocked || finalsTeams.length > 0}
