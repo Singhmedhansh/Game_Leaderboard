@@ -216,6 +216,7 @@ function TeamTable({ title, group, teams, qualificationUnlocked }) {
               {teams.map((team, index) => (
                 <motion.tr
                   key={team.id}
+                  className={!qualificationUnlocked ? '' : team.isQualified ? 'ff-row-qualified' : 'ff-row-eliminated'}
                   layout
                   variants={motionRows}
                   custom={index}
@@ -239,8 +240,8 @@ function TeamTable({ title, group, teams, qualificationUnlocked }) {
                   <td>{team.totalKills}</td>
                   <td className="ff-points">{team.totalPoints}</td>
                   <td>
-                    <Pill tone={!qualificationUnlocked ? 'dark' : team.isQualified ? 'accent' : 'neutral'}>
-                      {!qualificationUnlocked ? 'Pending' : team.isQualified ? 'Qualified' : 'Chasing'}
+                    <Pill tone={!qualificationUnlocked ? 'dark' : team.isQualified ? 'accent' : 'danger'}>
+                      {!qualificationUnlocked ? 'Pending' : team.isQualified ? 'Qualified' : 'Eliminated'}
                     </Pill>
                   </td>
                 </motion.tr>

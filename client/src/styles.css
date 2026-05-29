@@ -343,9 +343,27 @@ input, select {
   color: #ffe1a3;
 }
 
+.ff-pill-danger {
+  border-color: rgba(255, 76, 76, 0.5);
+  background: rgba(255, 76, 76, 0.14);
+  color: #ffd0d0;
+}
+
 .ff-pill-dark {
   background: rgba(255, 255, 255, 0.04);
   color: #dde3ec;
+}
+
+.ff-row-eliminated {
+  box-shadow: inset 3px 0 0 rgba(255, 76, 76, 0.72);
+}
+
+.ff-row-eliminated:hover {
+  background: rgba(255, 76, 76, 0.1);
+}
+
+.ff-row-qualified {
+  box-shadow: inset 3px 0 0 rgba(255, 106, 26, 0.72);
 }
 
 .ff-finals-grid {
