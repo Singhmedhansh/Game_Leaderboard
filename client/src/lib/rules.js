@@ -242,14 +242,19 @@ export const buildFinalists = (teams) => {
   const groupA = sortTeams(teams.filter((team) => team.bracketGroup === 'A')).slice(0, QUALIFIER_COUNT);
   const groupB = sortTeams(teams.filter((team) => team.bracketGroup === 'B')).slice(0, QUALIFIER_COUNT);
 
+  // Create finals entries that preserve each team's accumulated points/kills
+  // from group play so the finals preview reflects live totals. Match history
+  // for the finals stage is reset so finals matches start fresh, and
+  // `matchesPlayed` is set to 0 for the finals lobby.
   return [...groupA, ...groupB].map((team, index) => ({
     ...team,
     id: `final-${index + 1}`,
     bracketGroup: 'finals',
     matchesPlayed: 0,
-    totalBooyahs: 0,
-    totalKills: 0,
-    totalPoints: 0,
+    // preserve cumulative stats from group stage so preview shows them
+    totalBooyahs: Number(team.totalBooyahs || 0),
+    totalKills: Number(team.totalKills || 0),
+    totalPoints: Number(team.totalPoints || 0),
     isQualified: true,
     matchHistory: makeMatchHistory()
   }));
