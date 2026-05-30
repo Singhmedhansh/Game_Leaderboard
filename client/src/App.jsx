@@ -89,9 +89,11 @@ const hydrateState = (snapshot) => {
   });
 
   fresh.teams = hydratedTeams.length ? hydratedTeams : fresh.teams;
+  fresh.teams = normalizeFinalsSeedTotals(fresh.teams);
 
   if (isQualificationUnlocked(fresh.teams) && !fresh.teams.some((team) => team.bracketGroup === 'finals')) {
     fresh.teams = [...fresh.teams, ...buildFinalists(fresh.teams)];
+    fresh.teams = normalizeFinalsSeedTotals(fresh.teams);
   }
 
   refreshQualification(fresh.teams);
@@ -587,14 +589,15 @@ export default function App() {
   const groupA = useMemo(() => sortTeams(getGroupTeams(tournament.teams, 'A')), [tournament.teams]);
   const groupB = useMemo(() => sortTeams(getGroupTeams(tournament.teams, 'B')), [tournament.teams]);
   const finalsTeams = useMemo(() => sortTeams(getStageTeams(tournament.teams, 'finals')), [tournament.teams]);
+  const normalizedFinalsTeams = useMemo(() => normalizeFinalsSeedTotals(finalsTeams), [finalsTeams]);
   const qualificationUnlocked = useMemo(() => isQualificationUnlocked(tournament.teams), [tournament.teams]);
-  const finalsReady = useMemo(() => finalsTeams.length > 0, [finalsTeams]);
-  const finalsComplete = useMemo(() => isRoundComplete(finalsTeams), [finalsTeams]);
+  const finalsReady = useMemo(() => normalizedFinalsTeams.length > 0, [normalizedFinalsTeams]);
+  const finalsComplete = useMemo(() => isRoundComplete(normalizedFinalsTeams), [normalizedFinalsTeams]);
   const finalsPreview = useMemo(
-    () => (finalsTeams.length ? finalsTeams : buildFinalists(tournament.teams)),
-    [finalsTeams, tournament.teams]
+    () => (normalizedFinalsTeams.length ? normalizedFinalsTeams : buildFinalists(tournament.teams)),
+    [normalizedFinalsTeams, tournament.teams]
   );
-  const finalsPodium = useMemo(() => (finalsComplete ? buildPodium(finalsTeams) : []), [finalsComplete, finalsTeams]);
+  const finalsPodium = useMemo(() => (finalsComplete ? buildPodium(normalizedFinalsTeams) : []), [finalsComplete, normalizedFinalsTeams]);
 
   useEffect(() => {
     persistState(tournament);
@@ -609,7 +612,7 @@ export default function App() {
   }, [draft.group, draft.matchNumber, tournament.teams]);
 
   const totalPoints = tournament.teams.reduce((sum, team) => sum + team.totalPoints, 0);
-  const liveLeaderPool = finalsTeams.some((team) => team.matchesPlayed > 0 || team.totalPoints > 0)
+  const liveLeaderPool = normalizedFinalsTeams.some((team) => team.matchesPlayed > 0 || team.totalPoints > 0)
     ? tournament.teams
     : tournament.teams.filter((team) => team.bracketGroup !== 'finals');
   const liveLeader = sortTeams(liveLeaderPool)[0];
