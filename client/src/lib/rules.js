@@ -5,7 +5,7 @@ export const MATCH_TEAM_COUNT = 12;
 export const QUALIFIER_COUNT = 6;
 export const MATCH_COUNT = 3;
 export const GROUP_A_COUNT = 10;
-export const GROUP_B_COUNT = 11;
+export const GROUP_B_COUNT = 10;
 export const PODIUM_COUNT = 3;
 
 export const scoreTable = {
@@ -78,9 +78,19 @@ export const createTeamRecord = (payload, fallbackGroup = 'A') => {
 };
 
 export const createTournamentState = () => {
-  const teams = TOURNAMENT_TEAMS.map((team, index) =>
-    createTeamRecord(team, index < GROUP_A_COUNT ? 'A' : 'B')
-  );
+  // Filter out any disqualified or removed teams by name or UID to avoid
+  // accidentally seeding them into the live leaderboard. This removes
+  // legacy entries like "GodLike" even if they exist inside a built bundle.
+  const cleaned = (Array.isArray(TOURNAMENT_TEAMS) ? TOURNAMENT_TEAMS : []).filter((team) => {
+    const name = String(team.teamName || '').trim();
+    const uid = String(team.leaderUid || '').trim();
+    // remove teams named GodLike (any casing / whitespace) or known old UID
+    if (/^god\s*-?\s*like$/i.test(name)) return false;
+    if (uid === '1899984581') return false;
+    return true;
+  });
+
+  const teams = cleaned.map((team, index) => createTeamRecord(team, index < GROUP_A_COUNT ? 'A' : 'B'));
 
   refreshQualification(teams);
   return { teams };
