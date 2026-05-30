@@ -21,7 +21,8 @@ import {
 } from './lib/rules.js';
 import './styles.css';
 
-const STORAGE_KEY = 'ff-leaderboard-state-v3';
+// Bump storage key to invalidate older local snapshots and force fresh state
+const STORAGE_KEY = 'ff-leaderboard-state-v4';
 
 const motionRows = {
   hidden: { opacity: 0, y: 12 },
