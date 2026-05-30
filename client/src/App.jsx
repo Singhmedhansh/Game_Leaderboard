@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
+import confetti from 'canvas-confetti';
 import {
   ADMIN_PASSKEY,
   MATCH_COUNT,
@@ -176,7 +177,9 @@ function StatCard({ label, value, note }) {
 }
 
 function TeamTable({ title, group, teams, qualificationUnlocked }) {
-  const qualifiedCount = teams.filter((team) => team.isQualified).length;
+  // Hide any accidental empty team entries that render as a blank row
+  const visibleTeams = teams.filter((team) => String(team.teamName || '').trim());
+  const qualifiedCount = visibleTeams.filter((team) => team.isQualified).length;
 
   return (
     <section className="ff-panel ff-board">
@@ -185,12 +188,12 @@ function TeamTable({ title, group, teams, qualificationUnlocked }) {
           <p className="ff-kicker">{group} Bracket</p>
           <h2>{title}</h2>
           <p>
-            {teams.length} teams, top {QUALIFIER_COUNT} advance to finals.
+            {visibleTeams.length} teams, top {QUALIFIER_COUNT} advance to finals.
           </p>
         </div>
         <div className="ff-head-metrics">
           <Pill tone="accent">{qualificationUnlocked ? `${qualifiedCount} Qualified` : 'Qualification Locked'}</Pill>
-          <Pill tone="dark">{teams.length} Registered</Pill>
+          <Pill tone="dark">{visibleTeams.length} Registered</Pill>
         </div>
       </div>
 
@@ -213,7 +216,7 @@ function TeamTable({ title, group, teams, qualificationUnlocked }) {
           </thead>
           <tbody>
             <AnimatePresence mode="popLayout">
-              {teams.map((team, index) => (
+              {visibleTeams.map((team, index) => (
                 <motion.tr
                   key={team.id}
                   className={!qualificationUnlocked ? '' : team.isQualified ? 'ff-row-qualified' : 'ff-row-eliminated'}
@@ -255,7 +258,17 @@ function TeamTable({ title, group, teams, qualificationUnlocked }) {
 }
 
 function FinalsPreview({ finalists, podium, qualificationUnlocked, finalsReady, finalsComplete }) {
-  return (
+  useEffect(() => {
+  if (finalsComplete) {
+    confetti({
+      particleCount: 150,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+  }
+}, [finalsComplete]);
+
+return (
     <section className="ff-panel">
       <div className="ff-panel-head">
         <div>
@@ -692,7 +705,7 @@ export default function App() {
         </div>
 
         <div className="ff-hero-stats">
-          <StatCard label="Registered teams" value="21" note="10 in Group A, 11 in Group B" />
+          <StatCard label="Registered teams" value="20" note="10 in Group A, 10 in Group B" />
           <StatCard label="Round format" value="3 Matches" note="1 point per kill" />
           <StatCard label="Qualification" value={qualificationUnlocked ? 'Unlocked' : 'Pending'} note="Top 6 from each group after full entry" />
           <StatCard

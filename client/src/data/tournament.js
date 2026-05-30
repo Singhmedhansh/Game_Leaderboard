@@ -17,18 +17,9 @@ export const TOURNAMENT_TEAMS = [
     leaderUid: '961710076',
     bracketGroup: 'A',
     displayOrder: 2,
-    memberNames: ['Vikas', 'Prajwal', 'Jeevan']
+    memberNames: ['Vikas', 'Prajwal', 'Jeevan', 'Shreyas']
   },
-  {
-    id: 'team-03',
-    teamName: 'GodLike',
-    leaderName: 'Dhanush',
-    leaderInGameName: 'Dhanush M',
-    leaderUid: '1899984581',
-    bracketGroup: 'A',
-    displayOrder: 10,
-    memberNames: ['Skanda S', 'Rohit Kumar', 'Ragoththam', 'Dhanush M']
-  },
+
   {
     id: 'team-04',
     teamName: 'TOP G',
@@ -75,7 +66,7 @@ export const TOURNAMENT_TEAMS = [
     leaderName: 'Suhas',
     leaderInGameName: 'Hunter',
     leaderUid: '2206503275',
-    bracketGroup: 'B',
+    bracketGroup: 'A',
     displayOrder: 11,
     memberNames: ['Vishal', 'Dakshath', 'Amith']
   },
