@@ -331,7 +331,7 @@ function FinalsPreview({ finalists, podium, qualificationUnlocked, finalsReady, 
               </div>
               <h3>{team.teamName}</h3>
               <p>{team.leaderName}</p>
-              <p className="ff-muted">Finals: {team.totalPoints} pts • {team.totalKills} kills</p>
+              <p className="ff-muted">Combined finals: {team.totalPoints} pts • {team.totalKills} kills</p>
             </motion.article>
           ))
         ) : (
