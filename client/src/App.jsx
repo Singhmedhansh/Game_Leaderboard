@@ -302,6 +302,48 @@ function FinalsPreview({ finalists, podium, qualificationUnlocked, finalsReady, 
     <section className="ff-panel">
       <div className="ff-panel-head">
         <div>
+          <p className="ff-kicker">Final Bracket</p>
+          <h2>Top 12 Qualified</h2>
+          <p>
+            {qualificationUnlocked
+              ? 'The top 6 from Group A and the top 6 from Group B are seeded here for finals.'
+              : 'The current top 12 seeds from Group A and Group B are shown here until finals results are entered.'}
+          </p>
+        </div>
+        <Pill tone={finalsComplete ? 'accent' : finalsReady || finalists.length ? 'warning' : 'dark'}>
+          {finalsComplete ? 'Top 3 locked' : finalsReady ? 'Finals leaderboard live' : finalists.length ? 'Top 12 seeded' : 'Waiting for qualifiers'}
+        </Pill>
+      </div>
+
+      <div className="ff-finals-grid">
+        {finalists.length ? (
+          finalists.map((team, index) => (
+            <motion.article
+              key={team.id}
+              className="ff-final-card"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.03, duration: 0.22 }}
+            >
+              <div className="ff-final-head">
+                <span className="ff-final-slot">{index + 1}</span>
+                <Pill tone="warning">✓ Qualified</Pill>
+              </div>
+              <h3>{team.teamName}</h3>
+              <p>{team.leaderName}</p>
+              <p className="ff-muted">Finals: {team.totalPoints} pts • {team.totalKills} kills</p>
+            </motion.article>
+          ))
+        ) : (
+          <div className="ff-final-card">
+            <h3>Finals In Progress</h3>
+            <p>Once the 12 finalists finish their 3 championship matches, the top 3 teams will be crowned here.</p>
+          </div>
+        )}
+      </div>
+
+      <div className="ff-panel-head">
+        <div>
           <p className="ff-kicker">Top 3</p>
           <h2>Final Winners</h2>
           <p>{finalsComplete ? 'These are the top 3 teams after the finals leaderboard settles.' : 'Play all 3 finals matches to reveal the top 3 tournament winners.'}</p>
