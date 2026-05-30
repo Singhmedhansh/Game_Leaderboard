@@ -366,6 +366,25 @@ input, select {
   box-shadow: inset 3px 0 0 rgba(255, 106, 26, 0.72);
 }
 
+.ff-row-qualified .ff-rank-qualifier {
+  position: relative;
+}
+
+.ff-row-qualified .ff-rank-qualifier::after {
+  content: '✓';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffd9be;
+  font-size: 10px;
+  line-height: 1;
+}
+
 .ff-finals-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

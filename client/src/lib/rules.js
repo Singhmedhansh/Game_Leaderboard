@@ -28,11 +28,19 @@ const normalizeList = (value) =>
     .map((item) => String(item || '').trim())
     .filter(Boolean);
 
-const normalizeMatchHistory = (seed = []) => ({
-  1: seed[0] ?? { placement: null, kills: 0, points: 0 },
-  2: seed[1] ?? { placement: null, kills: 0, points: 0 },
-  3: seed[2] ?? { placement: null, kills: 0, points: 0 }
-});
+const normalizeMatchHistory = (seed = []) => {
+  const source = Array.isArray(seed)
+    ? seed
+    : seed && typeof seed === 'object'
+      ? [seed[1], seed[2], seed[3]].map((entry, index) => entry ?? seed[String(index + 1)] ?? seed[index])
+      : [];
+
+  return {
+    1: source[0] ?? { placement: null, kills: 0, points: 0 },
+    2: source[1] ?? { placement: null, kills: 0, points: 0 },
+    3: source[2] ?? { placement: null, kills: 0, points: 0 }
+  };
+};
 
 export const makeMatchHistory = (seed = []) => normalizeMatchHistory(seed);
 

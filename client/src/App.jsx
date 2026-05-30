@@ -254,7 +254,7 @@ function TeamTable({ title, group, teams, qualificationUnlocked }) {
                   <td className="ff-points">{team.totalPoints}</td>
                   <td>
                     <Pill tone={!qualificationUnlocked ? 'dark' : team.isQualified ? 'accent' : 'danger'}>
-                      {!qualificationUnlocked ? 'Pending' : team.isQualified ? 'Qualified' : 'Eliminated'}
+                      {!qualificationUnlocked ? 'Pending' : team.isQualified ? '✓ Qualified' : '× Eliminated'}
                     </Pill>
                   </td>
                 </motion.tr>
@@ -282,20 +282,20 @@ return (
     <section className="ff-panel">
       <div className="ff-panel-head">
         <div>
-          <p className="ff-kicker">Finals Preview</p>
-          <h2>Top 12 Bracket</h2>
+          <p className="ff-kicker">Final Bracket</p>
+          <h2>Top 12 Qualified</h2>
           <p>
             {qualificationUnlocked
-              ? 'The top 6 from Group A and the top 6 from Group B move into 3 more finals matches.'
-              : 'Finals lineup appears after all 3 matches are entered for every team in Group A and Group B.'}
+              ? 'The top 6 from Group A and the top 6 from Group B are live in the finals board.'
+              : 'The current top 12 seeds from Group A and Group B are shown here until finals results are entered.'}
           </p>
         </div>
-        <Pill tone={finalsComplete ? 'accent' : finalsReady ? 'warning' : 'dark'}>
-          {finalsComplete ? 'Champions crowned' : finalsReady ? 'Finals scoring live' : 'Waiting for qualifiers'}
+        <Pill tone={finalsComplete ? 'accent' : finalsReady || finalists.length ? 'warning' : 'dark'}>
+          {finalsComplete ? 'Top 3 locked' : finalsReady ? 'Finals leaderboard live' : finalists.length ? 'Top 12 seeded' : 'Waiting for qualifiers'}
         </Pill>
       </div>
 
-      {qualificationUnlocked ? (
+      {finalists.length ? (
         <>
           <div className="ff-finals-grid">
             {finalists.map((team, index) => (
@@ -308,7 +308,7 @@ return (
               >
                 <div className="ff-final-head">
                   <span className="ff-final-slot">{index + 1}</span>
-                  <Pill tone="warning">Finals</Pill>
+                  <Pill tone="warning">✓ Qualified</Pill>
                 </div>
                 <h3>{team.teamName}</h3>
                 <p>{team.leaderName}</p>
@@ -321,11 +321,11 @@ return (
 
           <div className="ff-panel-head">
             <div>
-              <p className="ff-kicker">Podium</p>
-              <h2>1st, 2nd, 3rd</h2>
-              <p>{finalsComplete ? 'These are the top 3 teams after the finals leaderboard settles.' : 'Play all 3 finals matches to reveal the tournament winners.'}</p>
+              <p className="ff-kicker">Top 3</p>
+              <h2>Final Winners</h2>
+              <p>{finalsComplete ? 'These are the top 3 teams after the finals leaderboard settles.' : 'Play all 3 finals matches to reveal the top 3 tournament winners.'}</p>
             </div>
-            <Pill tone={finalsComplete ? 'accent' : 'dark'}>{finalsComplete ? 'Winners locked' : 'Finals pending'}</Pill>
+            <Pill tone={finalsComplete ? 'accent' : 'dark'}>{finalsComplete ? 'Top 3 locked' : 'Finals pending'}</Pill>
           </div>
 
           <div className="ff-finals-grid">
@@ -357,8 +357,8 @@ return (
         </>
       ) : (
         <div className="ff-final-card">
-          <h3>Qualification Not Ready</h3>
-          <p>Complete all 3 matches for all teams in Group A and Group B to unlock finalists.</p>
+          <h3>Top 12 Seeds</h3>
+          <p>The final board will appear here once at least one team result is available.</p>
         </div>
       )}
     </section>
@@ -554,8 +554,8 @@ export default function App() {
   const finalsReady = useMemo(() => finalsTeams.length > 0, [finalsTeams]);
   const finalsComplete = useMemo(() => isRoundComplete(finalsTeams), [finalsTeams]);
   const finalsPreview = useMemo(
-    () => (finalsTeams.length ? finalsTeams : qualificationUnlocked ? buildFinalists(tournament.teams) : []),
-    [finalsTeams, qualificationUnlocked, tournament.teams]
+    () => (finalsTeams.length ? finalsTeams : buildFinalists(tournament.teams)),
+    [finalsTeams, tournament.teams]
   );
   const finalsPodium = useMemo(() => (finalsComplete ? buildPodium(finalsTeams) : []), [finalsComplete, finalsTeams]);
 
