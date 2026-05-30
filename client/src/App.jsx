@@ -61,7 +61,16 @@ const hydrateState = (snapshot) => {
     return fresh;
   }
 
-  const hydratedTeams = snapshot.teams.map((saved) => {
+  // Remove any legacy/removed teams from stored snapshots (e.g. 'GodLike')
+  const cleanedSnapshotTeams = (Array.isArray(snapshot.teams) ? snapshot.teams : []).filter((team) => {
+    const name = String(team.teamName || '').trim();
+    const uid = String(team.leaderUid || '').trim();
+    if (/^god\s*-?\s*like$/i.test(name)) return false;
+    if (uid === '1899984581') return false;
+    return true;
+  });
+
+  const hydratedTeams = cleanedSnapshotTeams.map((saved) => {
     const fallbackGroup = saved.bracketGroup || 'A';
     const baseTeam = fresh.teams.find((team) => team.id === saved.id);
 
