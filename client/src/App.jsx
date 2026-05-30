@@ -50,6 +50,9 @@ const buildSnapshot = (state) => ({
     totalBooyahs: team.totalBooyahs,
     totalKills: team.totalKills,
     totalPoints: team.totalPoints,
+    qualificationBooyahs: team.qualificationBooyahs,
+    qualificationKills: team.qualificationKills,
+    qualificationPoints: team.qualificationPoints,
     isQualified: team.isQualified,
     matchHistory: team.matchHistory
   }))
@@ -150,6 +153,23 @@ const createDraftRows = (teams, matchNumber) =>
 const getGroupTeams = (teams, group) => teams.filter((team) => team.bracketGroup === group);
 
 const getStageTeams = (teams, group) => getGroupTeams(teams, group);
+
+const normalizeFinalsSeedTotals = (teams) =>
+  teams.map((team) => {
+    if (team.bracketGroup !== 'finals' || Number(team.matchesPlayed || 0) > 0) {
+      return team;
+    }
+
+    return {
+      ...team,
+      qualificationBooyahs: Number(team.qualificationBooyahs || team.totalBooyahs || 0),
+      qualificationKills: Number(team.qualificationKills || team.totalKills || 0),
+      qualificationPoints: Number(team.qualificationPoints || team.totalPoints || 0),
+      totalBooyahs: 0,
+      totalKills: 0,
+      totalPoints: 0
+    };
+  });
 
 const syncFinalists = (teams) => {
   const finalsTeams = getStageTeams(teams, 'finals');
@@ -313,7 +333,10 @@ return (
                 <h3>{team.teamName}</h3>
                 <p>{team.leaderName}</p>
                 <p className="ff-muted">
-                  {team.totalPoints} pts • {team.totalKills} kills
+                  Finals: {team.totalPoints} pts • {team.totalKills} kills
+                </p>
+                <p className="ff-muted">
+                  Seeded from qualifiers: {team.qualificationPoints || 0} pts • {team.qualificationKills || 0} kills
                 </p>
               </motion.article>
             ))}

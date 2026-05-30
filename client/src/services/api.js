@@ -20,9 +20,30 @@ const emptyState = createTournamentState();
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
+const normalizeFinalsSeedTotals = (state) => ({
+  ...state,
+  teams: Array.isArray(state.teams)
+    ? state.teams.map((team) => {
+        if (team.bracketGroup !== 'finals' || Number(team.matchesPlayed || 0) > 0) {
+          return team;
+        }
+
+        return {
+          ...team,
+          qualificationBooyahs: Number(team.qualificationBooyahs || team.totalBooyahs || 0),
+          qualificationKills: Number(team.qualificationKills || team.totalKills || 0),
+          qualificationPoints: Number(team.qualificationPoints || team.totalPoints || 0),
+          totalBooyahs: 0,
+          totalKills: 0,
+          totalPoints: 0
+        };
+      })
+    : []
+});
+
 const loadLocalState = () => {
   if (typeof window === 'undefined') {
-    return clone(emptyState);
+    return normalizeFinalsSeedTotals(clone(emptyState));
   }
 
   const stored = window.localStorage.getItem(storageKey);
@@ -34,11 +55,11 @@ const loadLocalState = () => {
 
   try {
     const parsed = JSON.parse(stored);
-    return { teams: Array.isArray(parsed.teams) ? parsed.teams : [] };
+    return normalizeFinalsSeedTotals({ teams: Array.isArray(parsed.teams) ? parsed.teams : [] });
   } catch {
     const initial = clone(emptyState);
     window.localStorage.setItem(storageKey, JSON.stringify(initial));
-    return initial;
+    return normalizeFinalsSeedTotals(initial);
   }
 };
 

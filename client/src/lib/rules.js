@@ -80,6 +80,9 @@ export const createTeamRecord = (payload, fallbackGroup = 'A') => {
     totalBooyahs: Number(payload.totalBooyahs || 0),
     totalKills: Number(payload.totalKills || 0),
     totalPoints: Number(payload.totalPoints || payload.seedPoints || 0),
+    qualificationBooyahs: Number(payload.qualificationBooyahs || 0),
+    qualificationKills: Number(payload.qualificationKills || 0),
+    qualificationPoints: Number(payload.qualificationPoints || 0),
     isQualified: Boolean(payload.isQualified),
     matchHistory: normalizeMatchHistory(payload.matchHistory)
   };
@@ -269,10 +272,13 @@ export const buildFinalists = (teams) => {
     id: `final-${index + 1}`,
     bracketGroup: 'finals',
     matchesPlayed: 0,
-    // preserve cumulative stats from group stage so preview shows them
-    totalBooyahs: Number(team.totalBooyahs || 0),
-    totalKills: Number(team.totalKills || 0),
-    totalPoints: Number(team.totalPoints || 0),
+    // preserve group-stage totals separately while finals scoring starts at zero
+    qualificationBooyahs: Number(team.totalBooyahs || 0),
+    qualificationKills: Number(team.totalKills || 0),
+    qualificationPoints: Number(team.totalPoints || 0),
+    totalBooyahs: 0,
+    totalKills: 0,
+    totalPoints: 0,
     isQualified: true,
     matchHistory: makeMatchHistory()
   }));
