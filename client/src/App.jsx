@@ -154,20 +154,42 @@ const getGroupTeams = (teams, group) => teams.filter((team) => team.bracketGroup
 
 const getStageTeams = (teams, group) => getGroupTeams(teams, group);
 
+const getFinalsMatchTotals = (team) => {
+  const history = team.matchHistory || {};
+  const rounds = Array.from({ length: MATCH_COUNT }, (_, index) => index + 1).map((round) => history[round]);
+  const scoredRounds = rounds.filter((entry) => {
+    const placement = Number(entry?.placement);
+    const kills = Number(entry?.kills);
+    return Number.isInteger(placement) && placement >= 1 && placement <= MATCH_TEAM_COUNT && Number.isFinite(kills) && kills >= 0;
+  });
+
+  const totalPoints = scoredRounds.reduce((sum, entry) => sum + Number(entry.points || 0), 0);
+  const totalKills = scoredRounds.reduce((sum, entry) => sum + Number(entry.kills || 0), 0);
+  const totalBooyahs = scoredRounds.reduce((sum, entry) => sum + (Number(entry.placement) === 1 ? 1 : 0), 0);
+  const matchesPlayed = scoredRounds.length ? Math.max(...scoredRounds.map((entry) => Number(entry.placement))) : 0;
+
+  return {
+    matchesPlayed,
+    totalBooyahs,
+    totalKills,
+    totalPoints
+  };
+};
+
 const normalizeFinalsSeedTotals = (teams) =>
   teams.map((team) => {
-    if (team.bracketGroup !== 'finals' || Number(team.matchesPlayed || 0) > 0) {
+    if (team.bracketGroup !== 'finals') {
       return team;
     }
+
+    const finalsTotals = getFinalsMatchTotals(team);
 
     return {
       ...team,
       qualificationBooyahs: Number(team.qualificationBooyahs || team.totalBooyahs || 0),
       qualificationKills: Number(team.qualificationKills || team.totalKills || 0),
       qualificationPoints: Number(team.qualificationPoints || team.totalPoints || 0),
-      totalBooyahs: 0,
-      totalKills: 0,
-      totalPoints: 0
+      ...finalsTotals
     };
   });
 
